@@ -44,3 +44,19 @@ export function planDemoSeed(
   }
   return { ok: true, plan: { remote: true, password: chosen, withAdmin: env.DEMO_WITH_ADMIN === "1" } };
 }
+
+/**
+ * Whether a demo sign-in may create the demo accounts itself: only when the host has set
+ * DEMO_PASSWORD, that password passes the hosted rules above, and the visitor typed exactly it.
+ * Returns the plan to provision with, or null. The typed password is never used as the plan's.
+ */
+export function selfProvisionPlan(
+  typed: string,
+  supabaseUrl: string,
+  env: { DEMO_PASSWORD?: string; DEMO_WITH_ADMIN?: string },
+): DemoSeedPlan | null {
+  if (!env.DEMO_PASSWORD?.trim()) return null;
+  const decision = planDemoSeed(supabaseUrl, env);
+  if (!decision.ok || decision.plan.password !== typed) return null;
+  return decision.plan;
+}

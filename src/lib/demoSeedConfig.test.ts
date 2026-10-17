@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCAL_DEMO_PASSWORD, planDemoSeed } from "./demoSeedConfig";
+import { LOCAL_DEMO_PASSWORD, planDemoSeed, selfProvisionPlan } from "./demoSeedConfig";
 
 const LOCAL = "http://127.0.0.1:54321";
 const HOSTED = "https://abcdefgh.supabase.co";
@@ -51,6 +51,33 @@ describe("planDemoSeed on a hosted project", () => {
     const maybe = planDemoSeed(HOSTED, { DEMO_PASSWORD: "a-private-password", DEMO_WITH_ADMIN: "true" });
     expect(withAdmin.ok && withAdmin.plan.withAdmin).toBe(true);
     expect(maybe.ok && maybe.plan.withAdmin).toBe(false);
+  });
+});
+
+describe("selfProvisionPlan (first demo sign-in creates the accounts)", () => {
+  it("does nothing unless the host set DEMO_PASSWORD, even on a local stack", () => {
+    expect(selfProvisionPlan(LOCAL_DEMO_PASSWORD, LOCAL, {})).toBeNull();
+    expect(selfProvisionPlan("123456", HOSTED, {})).toBeNull();
+  });
+
+  it("provisions only when the visitor typed exactly the configured password", () => {
+    expect(selfProvisionPlan("123456", HOSTED, { DEMO_PASSWORD: "123456" })).toEqual({
+      remote: true,
+      password: "123456",
+      withAdmin: false,
+    });
+    expect(selfProvisionPlan("1234567", HOSTED, { DEMO_PASSWORD: "123456" })).toBeNull();
+    expect(selfProvisionPlan("", HOSTED, { DEMO_PASSWORD: "123456" })).toBeNull();
+  });
+
+  it("still refuses the published default and short passwords on a hosted project", () => {
+    expect(selfProvisionPlan(LOCAL_DEMO_PASSWORD, HOSTED, { DEMO_PASSWORD: LOCAL_DEMO_PASSWORD })).toBeNull();
+    expect(selfProvisionPlan("12345", HOSTED, { DEMO_PASSWORD: "12345" })).toBeNull();
+  });
+
+  it("includes the admin account only when DEMO_WITH_ADMIN is 1", () => {
+    const plan = selfProvisionPlan("123456", HOSTED, { DEMO_PASSWORD: "123456", DEMO_WITH_ADMIN: "1" });
+    expect(plan?.withAdmin).toBe(true);
   });
 });
 

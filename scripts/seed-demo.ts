@@ -17,120 +17,13 @@
  *   npm run demo:hosted                     # = tsx scripts/seed-demo.ts --env .env.hosted.local
  *
  * It skips demo.admin on a hosted project unless that file also sets DEMO_WITH_ADMIN=1.
+ *
+ * You can skip this script on a hosted site entirely: when the host sets DEMO_PASSWORD, the first
+ * sign-in at /demo-login with that password creates the same accounts and slots (src/lib/demo/accounts.ts).
  */
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
-import { LOCAL_DEMO_PASSWORD, planDemoSeed } from "../src/lib/demoSeedConfig";
-
-/** Set in main() once we know whether this is a local stack or a hosted project. */
-let password = LOCAL_DEMO_PASSWORD;
-const SLOT_CAPACITY = 10;
-const SLOT_STEP_MIN = 5;
-const MIN_LEAD_MIN = 15;
-
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-type Account = {
-  loginId: string;
-  domain: string;
-  role: "student" | "staff" | "admin";
-  fullName: string;
-  phone: string | null;
-  regNo: string | null;
-};
-
-const ACCOUNTS: Account[] = [
-  { loginId: "demo.student", domain: "staff.oac.local", role: "student", fullName: "Demo Student", phone: "9876543210", regNo: "DEMO0001" },
-  { loginId: "demo.staff", domain: "staff.oac.local", role: "staff", fullName: "Demo Counter Staff", phone: null, regNo: null },
-  { loginId: "demo.admin", domain: "staff.oac.local", role: "admin", fullName: "Demo Admin", phone: null, regNo: null },
-];
-
-async function findUserByEmail(admin: SupabaseClient, email: string): Promise<User | null> {
-  const perPage = 200;
-  for (let page = 1; ; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const match = data.users.find((u) => u.email?.toLowerCase() === email);
-    if (match) return match;
-    if (data.users.length < perPage) return null;
-  }
-}
-
-type Tenant = { collegeId: string; canteenId: string };
-
-/** The backfilled college (ait-pune) and its canteen (oac). */
-async function findTenant(admin: SupabaseClient): Promise<Tenant> {
-  const { data: college, error } = await admin.from("colleges").select("id").eq("slug", "ait-pune").single();
-  if (error || !college) throw new Error("College ait-pune not found. Run the database migrations first.");
-  const { data: canteen, error: canteenError } = await admin
-    .from("canteens")
-    .select("id")
-    .eq("college_id", college.id)
-    .eq("slug", "oac")
-    .single();
-  if (canteenError || !canteen) throw new Error("Canteen oac not found. Run the database migrations first.");
-  return { collegeId: college.id, canteenId: canteen.id };
-}
-
-async function upsertAccount(admin: SupabaseClient, account: Account, tenant: Tenant) {
-  const email = `${account.loginId}@${account.domain}`;
-  const created = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { provisioned: true }, // lets it past the college-email guard
-  });
-  let user = created.data.user;
-  if (!user) {
-    const existing = await findUserByEmail(admin, email);
-    if (!existing) throw created.error ?? new Error(`Could not create ${email}`);
-    const updated = await admin.auth.admin.updateUserById(existing.id, {
-      password,
-      email_confirm: true,
-      app_metadata: { ...existing.app_metadata, provisioned: true },
-    });
-    if (updated.error || !updated.data.user) throw updated.error ?? new Error(`Could not update ${email}`);
-    user = updated.data.user;
-  }
-
-  const { error } = await admin.from("profiles").upsert(
-    {
-      id: user.id,
-      full_name: account.fullName,
-      phone: account.phone,
-      reg_no: account.regNo,
-      role: account.role,
-      is_active: true,
-      is_defaulter: false,
-      must_change_password: false,
-      college_id: tenant.collegeId,
-    },
-    { onConflict: "id" },
-  );
-  if (error) throw error;
-
-  if (account.role === "staff") {
-    const { error: memberError } = await admin
-      .from("canteen_members")
-      .upsert({ user_id: user.id, canteen_id: tenant.canteenId, role: "staff" }, { onConflict: "user_id,canteen_id" });
-    if (memberError) throw memberError;
-  }
-}
-
-/** Slots every 5 minutes from now until campus midnight, so a rerun reuses the same rows. */
-async function openSlots(admin: SupabaseClient, canteenId: string) {
-  const now = Date.now();
-  const dayEnd = Math.floor((now + IST_OFFSET_MS) / DAY_MS) * DAY_MS + DAY_MS - IST_OFFSET_MS;
-  const step = SLOT_STEP_MIN * 60_000;
-  const rows: { canteen_id: string; starts_at: string; capacity: number }[] = [];
-  for (let t = Math.ceil((now + MIN_LEAD_MIN * 60_000) / step) * step; t < dayEnd; t += step) {
-    rows.push({ canteen_id: canteenId, starts_at: new Date(t).toISOString(), capacity: SLOT_CAPACITY });
-  }
-  if (rows.length === 0) return 0;
-  const { error } = await admin.from("slots").upsert(rows, { onConflict: "canteen_id,starts_at", ignoreDuplicates: true });
-  if (error) throw error;
-  return rows.length;
-}
+import { createClient } from "@supabase/supabase-js";
+import { provisionDemo } from "../src/lib/demo/accounts";
+import { planDemoSeed } from "../src/lib/demoSeedConfig";
 
 async function main() {
   // `--env <file>` points at a hosted project's settings (see .env.hosted.example); the default is the local stack.
@@ -164,17 +57,12 @@ async function main() {
     process.exit(1);
   }
   const { plan } = decision;
-  password = plan.password;
-  const accounts = ACCOUNTS.filter((a) => a.role !== "admin" || plan.withAdmin);
 
-  const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-
-  const tenant = await findTenant(admin);
-  for (const account of accounts) await upsertAccount(admin, account, tenant);
-  const slots = await openSlots(admin, tenant.canteenId);
+  const service = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { slots } = await provisionDemo(service, { password: plan.password, withAdmin: plan.withAdmin });
 
   // A private password is never echoed; the default one is public anyway.
-  console.log(plan.remote ? "Demo accounts ready (password: the DEMO_PASSWORD you set)" : `Demo accounts ready (password for all: ${password})`);
+  console.log(plan.remote ? "Demo accounts ready (password: the DEMO_PASSWORD you set)" : `Demo accounts ready (password for all: ${plan.password})`);
   console.log("  Student  /demo-login   ID: demo.student");
   console.log("  Staff    /staff-login  ID: demo.staff");
   if (plan.withAdmin) console.log("  Admin    /staff-login  ID: demo.admin");

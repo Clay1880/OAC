@@ -1,6 +1,8 @@
 "use server";
 
 import { isDemoLoginEnabled } from "@/lib/config";
+import { findDemoTenant, openTodaySlots, provisionDemo } from "@/lib/demo/accounts";
+import { selfProvisionPlan } from "@/lib/demoSeedConfig";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,13 +48,40 @@ export async function demoLogin(loginId: string, password: string): Promise<Staf
   if (!LOGIN_ID_PATTERN.test(id) || password === "") return { ok: false, error: "INVALID" };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email: `${id}@${STAFF_EMAIL_DOMAIN}`, password });
+  const credentials = { email: `${id}@${STAFF_EMAIL_DOMAIN}`, password };
+  let { data, error } = await supabase.auth.signInWithPassword(credentials);
+
+  // A fresh hosted project has no demo accounts yet. When the host set DEMO_PASSWORD and the visitor
+  // typed exactly it, the first demo.student sign-in creates the accounts and today's slots itself.
+  if ((error || !data.user) && id === "demo.student") {
+    const plan = selfProvisionPlan(password, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", {
+      DEMO_PASSWORD: process.env.DEMO_PASSWORD,
+      DEMO_WITH_ADMIN: process.env.DEMO_WITH_ADMIN,
+    });
+    if (!plan) return { ok: false, error: "INVALID" };
+    try {
+      await provisionDemo(createAdminClient(), { password: plan.password, withAdmin: plan.withAdmin });
+    } catch {
+      return { ok: false, error: "INVALID" }; // the database is not set up yet; nothing to sign in to
+    }
+    ({ data, error } = await supabase.auth.signInWithPassword(credentials));
+  }
   if (error || !data.user) return { ok: false, error: "INVALID" };
 
   const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", data.user.id).maybeSingle();
   if (!profile || profile.role !== "student" || !profile.is_active) {
     await supabase.auth.signOut();
     return { ok: false, error: "INVALID" };
+  }
+
+  // Demo mode: keep today's pickup slots open so the presentation can always place an order.
+  if (id === "demo.student" && process.env.DEMO_PASSWORD?.trim()) {
+    try {
+      const service = createAdminClient();
+      await openTodaySlots(service, (await findDemoTenant(service)).canteenId);
+    } catch {
+      // Slots are a convenience; the sign-in itself succeeded.
+    }
   }
   return { ok: true };
 }

@@ -22,13 +22,15 @@ On Vercel: Project, Settings, Environment Variables. Add each one for Production
 ## One-time setup of the hosted Supabase project
 
 1. Create a project at supabase.com and note its reference (the `<ref>` in its URL).
-2. From a **clean, committed checkout** of the branch you are deploying (`db push` applies every file in `supabase/migrations`, including half-edited ones in a dirty working tree):
+2. **Easiest, no CLI:** open the dashboard, SQL Editor, New query; paste the whole of `supabase/hosted-setup.sql` (every migration plus the menu seed, in one transaction) and press Run. It must run on an **empty** project. If a migration or the seed changes later, regenerate the file with `node scripts/build-hosted-sql.mjs` and apply only the new migration's section by hand.
+
+   **Alternative, with the CLI** (from a clean, committed checkout; `db push` applies every file in `supabase/migrations`, including half-edited ones in a dirty working tree):
    ```bash
    npx supabase login
    npx supabase link --project-ref <ref>
    npx supabase db push
    ```
-3. `db push` does not run `supabase/seed.sql`. Run it once in the dashboard SQL editor to add the college domain and the menu (or add dishes in the admin console). To use your own email domain, insert it instead: `insert into public.college_domains (domain, college_id) select 'yourcollege.edu', id from public.colleges where slug = 'ait-pune';`
+3. With the CLI route, `db push` does not run `supabase/seed.sql`: run it once in the dashboard SQL editor to add the college domain and the menu (or add dishes in the admin console). To use your own email domain, insert it instead: `insert into public.college_domains (domain, college_id) select 'yourcollege.edu', id from public.colleges where slug = 'ait-pune';`
 4. Dashboard, Authentication:
    - URL Configuration: set Site URL to your deployed address and add it to Redirect URLs.
    - Providers, Email: enabled, with "Confirm email" on.
@@ -53,7 +55,7 @@ Create the accounts on the hosted project from your own machine. The default pas
 npm run demo:hosted
 ```
 
-This creates `demo.student` (sign in at `/demo-login`) and `demo.staff` (sign in at `/staff-login`) with that password, and opens pickup slots for the rest of today, so run it again before each demo. It skips `demo.admin` unless the file also sets `DEMO_WITH_ADMIN=1`. The menu must exist first (step 3 above).
+This creates `demo.student` (sign in at `/demo-login`) and `demo.staff` (sign in at `/staff-login`) with that password, and opens pickup slots for the rest of today, so run it again before each demo. It skips `demo.admin` unless the file also sets `DEMO_WITH_ADMIN=1` (set it: the admin console is where you open more pickup slots and edit the menu). The database must be set up first (steps 2 and 3 above), or the script stops with "College ait-pune not found".
 
 Anyone who knows the password can use these accounts, and the staff account can see students' names and phone numbers. Share the password only with the people at the demo, and delete the accounts afterwards (Supabase dashboard, Authentication, Users), or turn `DEMO_LOGIN` off.
 
