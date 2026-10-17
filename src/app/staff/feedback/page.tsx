@@ -3,7 +3,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { FeedbackList } from "@/components/staff/FeedbackList";
 import { buttonStyles } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { starString, summarizeFeedback, type FeedbackRow } from "@/lib/feedback/summary";
+import { starString, toFeedbackSummary, type FeedbackRow, type FeedbackSummaryRow } from "@/lib/feedback/summary";
 import { createClient } from "@/lib/supabase/server";
 import { consoleCanteen } from "@/lib/tenancy/current";
 
@@ -16,10 +16,10 @@ export default async function StaffFeedbackPage() {
   const now = new Date();
   const canteen = await consoleCanteen(supabase);
 
-  // The summary counts every rating; only the list is capped at the latest rows.
+  // The summary is computed in SQL over every rating; only the list is capped at the latest rows.
   const [ratings, latest] = canteen
     ? await Promise.all([
-        supabase.from("staff_feedback_v").select("rating").eq("canteen_id", canteen.id),
+        supabase.rpc("feedback_summary", { p_canteen_id: canteen.id }),
         supabase
           .from("staff_feedback_v")
           .select("order_id, rating, comment, created_at, order_code, student_name, items")
@@ -31,7 +31,7 @@ export default async function StaffFeedbackPage() {
 
   const failed = canteen !== null && (ratings?.error || latest?.error);
   const rows = (latest?.data ?? []) as FeedbackRow[];
-  const summary = summarizeFeedback((ratings?.data ?? []) as { rating: number }[]);
+  const summary = toFeedbackSummary(((ratings?.data ?? []) as FeedbackSummaryRow[])[0]);
   const widest = Math.max(1, ...summary.distribution);
 
   return (

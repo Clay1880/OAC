@@ -261,3 +261,57 @@ describe("staff_feedback_v", () => {
     expect(data).toHaveLength(0);
   });
 });
+
+describe("feedback_summary", () => {
+  type SummaryRow = { count: number; average: number | null; c1: number; c2: number; c3: number; c4: number; c5: number };
+
+  it("counts, averages to one decimal and tallies each star for the canteen's staff", async () => {
+    const canteen = await createCanteen();
+    const student = await createUser("student", { canteenId: canteen.id });
+    const staff = await createUser("staff", { canteenId: canteen.id });
+    for (const rating of [5, 4, 4]) {
+      const order = await orderAt(student, "collected", { canteenId: canteen.id });
+      expect((await submit(student, order.id, rating)).error).toBeNull();
+    }
+
+    const { data, error } = await staff.client.rpc("feedback_summary", { p_canteen_id: canteen.id });
+
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    const row = (data as SummaryRow[])[0];
+    expect({ ...row, average: Number(row.average) }).toEqual({ count: 3, average: 4.3, c1: 0, c2: 0, c3: 0, c4: 2, c5: 1 });
+  });
+
+  it("is zero with no average when the canteen has no feedback yet", async () => {
+    const canteen = await createCanteen();
+    const staff = await createUser("staff", { canteenId: canteen.id });
+
+    const { data, error } = await staff.client.rpc("feedback_summary", { p_canteen_id: canteen.id });
+
+    expect(error).toBeNull();
+    expect(data).toEqual([{ count: 0, average: null, c1: 0, c2: 0, c3: 0, c4: 0, c5: 0 }]);
+  });
+
+  it("staff of another canteen and a student get zero rows", async () => {
+    const canteen = await createCanteen();
+    const other = await createCanteen();
+    const student = await createUser("student", { canteenId: canteen.id });
+    const outsider = await createUser("staff", { canteenId: other.id });
+    const order = await orderAt(student, "collected", { canteenId: canteen.id });
+    expect((await submit(student, order.id, 5)).error).toBeNull();
+
+    for (const user of [outsider, student]) {
+      const { data, error } = await user.client.rpc("feedback_summary", { p_canteen_id: canteen.id });
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    }
+  });
+
+  it("a signed-out caller cannot call it", async () => {
+    const anon = createClient(URL, ANON_KEY, { auth: { persistSession: false } });
+
+    const { error } = await anon.rpc("feedback_summary", { p_canteen_id: (await defaultCanteen()).id });
+
+    expect(error).not.toBeNull();
+  });
+});

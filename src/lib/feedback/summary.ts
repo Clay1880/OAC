@@ -17,17 +17,24 @@ export type FeedbackSummary = {
   distribution: [number, number, number, number, number];
 };
 
-export function summarizeFeedback(rows: { rating: number }[]): FeedbackSummary {
-  const distribution: FeedbackSummary["distribution"] = [0, 0, 0, 0, 0];
-  let sum = 0;
-  for (const { rating } of rows) {
-    distribution[rating - 1] += 1;
-    sum += rating;
-  }
+/** A row of `public.feedback_summary(canteen_id)`. bigint and numeric may arrive as strings. */
+export type FeedbackSummaryRow = {
+  count: number | string;
+  average: number | string | null;
+  c1: number | string;
+  c2: number | string;
+  c3: number | string;
+  c4: number | string;
+  c5: number | string;
+};
+
+/** The summary card's numbers from the SQL summary; no row (not staff of the canteen) reads as empty. */
+export function toFeedbackSummary(row: FeedbackSummaryRow | undefined): FeedbackSummary {
+  if (!row) return { count: 0, average: null, distribution: [0, 0, 0, 0, 0] };
   return {
-    count: rows.length,
-    average: rows.length === 0 ? null : Math.round((sum / rows.length) * 10) / 10,
-    distribution,
+    count: Number(row.count),
+    average: row.average === null ? null : Number(row.average),
+    distribution: [Number(row.c1), Number(row.c2), Number(row.c3), Number(row.c4), Number(row.c5)],
   };
 }
 
