@@ -127,6 +127,8 @@
   --shadow-edge: 0 4px 24px rgb(0 0 0 / 0.05);
   --shadow-press: 0 8px 18px -8px rgb(198 124 78 / 0.75);
   --shadow-lift: 0 12px 32px -8px rgb(49 49 49 / 0.25);
+  /* The phone-width app column on a wide screen: a hairline edge and a deep shadow on the dark canvas. */
+  --shadow-canvas: 0 0 0 1px rgb(255 255 255 / 0.06), 0 24px 80px rgb(0 0 0 / 0.55);
 
   --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -149,6 +151,20 @@
     line-height: 1.5;
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * The app is designed phone-first. On a laptop the phone-width column sits on a charcoal
+   * canvas with a soft copper glow, so it reads as a deliberate app frame instead of a strip of
+   * white. Each column paints its own paper background (see the layouts).
+   */
+  @media (min-width: 40rem) {
+    html,
+    body {
+      background-color: var(--dark);
+      background-image: radial-gradient(60rem 36rem at 50% -8rem, rgb(198 124 78 / 0.22), transparent 65%);
+      background-attachment: fixed;
+    }
   }
 
   h1,

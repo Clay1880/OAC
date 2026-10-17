@@ -35,7 +35,7 @@ export default async function StaffFeedbackPage() {
   const widest = Math.max(1, ...summary.distribution);
 
   return (
-    <main id="main" data-surface="staff" className="mx-auto min-h-dvh w-full max-w-xl px-4 pb-16">
+    <main id="main" data-surface="staff" className="mx-auto min-h-dvh w-full max-w-xl bg-paper px-4 pb-16 sm:shadow-canvas">
       <header className="my-3 flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-2 pl-3 shadow-edge">
         <div className="flex min-w-0 items-center gap-3">
           <BrandMark />

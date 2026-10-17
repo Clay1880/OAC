@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   if (!(await adminCallerId(await createClient()))) redirect("/");
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
+    <div className="min-h-dvh bg-paper lg:grid lg:grid-cols-[15rem_1fr]">
       {/* Indigo bar on a phone, fixed sidebar from lg up. */}
       <aside className="bg-dark-soft text-on-dark lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:py-6 lg:pl-4">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-3 lg:pb-8 lg:pt-0">

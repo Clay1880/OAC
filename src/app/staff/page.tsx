@@ -17,7 +17,7 @@ export default async function StaffHome() {
   const data = canteen ? await fetchStaffData(supabase, canteen.id) : null;
 
   return (
-    <main id="main" className="mx-auto min-h-dvh w-full max-w-xl px-4 pb-16">
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-xl bg-paper px-4 pb-16 sm:shadow-canvas">
       <header className="my-3 flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-2 pl-3 shadow-edge">
         <div className="flex items-center gap-3">
           <BrandMark />

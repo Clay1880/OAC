@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { BrandMark } from "@/components/BrandMark";
+import { InstallBanner } from "@/components/InstallBanner";
 
 /**
  * Shared frame for the signed-out screens, after the JavaGem welcome screen: a dark coffee photo
@@ -18,7 +19,7 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-dark">
+    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-dark sm:shadow-canvas">
       <header className="relative flex min-h-[19rem] flex-col justify-end overflow-hidden px-6 pb-12 pt-8 text-on-dark">
         <Image src="/figma/photos/p6.jpg" alt="" fill priority sizes="448px" className="object-cover object-top" />
         <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-dark via-dark/60 to-dark/10" />
@@ -34,6 +35,9 @@ export function AuthShell({
       <div className="relative -mt-6 flex flex-1 flex-col gap-5 rounded-t-sheet bg-paper px-5 pb-8 pt-7">
         {children}
         {footer && <footer className="text-sm text-ink-soft">{footer}</footer>}
+        <div className="mt-auto pt-2">
+          <InstallBanner />
+        </div>
       </div>
     </main>
   );

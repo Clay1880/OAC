@@ -3,8 +3,10 @@ import type { MetadataRoute } from "next";
 // Colours mirror --paper and --dark in globals.css; a manifest cannot read CSS variables.
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "OAC canteen pre-order",
     short_name: "OAC",
+    categories: ["food", "education"],
     description: "Pre-order from the college canteen, pick a pickup slot, and pay at the counter.",
     start_url: "/",
     scope: "/",
