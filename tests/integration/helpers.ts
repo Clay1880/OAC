@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Local `supabase start` demo values (public, not secrets). Override via env for other stacks.
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
+export const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
 const ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-const SERVICE_KEY =
+export const SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
@@ -60,17 +60,36 @@ export async function createMenuItem(
   return data;
 }
 
-/** Slot starting `minutesFromNow` minutes from now (test machine clock; the DB clock is what decides). */
-export async function createSlot(minutesFromNow: number, capacity: number): Promise<{ id: string }> {
-  // Sub-5s jitter keeps starts_at (unique) distinct without moving a slot across the cutoff.
-  const startsAt = new Date(Date.now() + minutesFromNow * 60_000 + Math.floor(Math.random() * 5_000));
-  const { data, error } = await admin
-    .from("slots")
-    .insert({ starts_at: startsAt.toISOString(), capacity })
-    .select("id")
-    .single();
-  if (error) throw new Error(`slot: ${error.message}`);
-  return data;
+/**
+ * Slot starting `minutesFromNow` minutes from now (test machine clock; the DB clock is what decides).
+ * Students choose a pickup time on a clock, so two slots in the same minute would be ambiguous:
+ * a start that is already taken moves on a minute at a time.
+ */
+export async function createSlot(minutesFromNow: number, capacity: number): Promise<{ id: string; starts_at: string }> {
+  // Parallel workers all ask for "30 minutes from now", so far-off slots start a few minutes apart.
+  // Near-term and past slots keep their exact offset: they exist to test the cutoff.
+  const spread = minutesFromNow >= 20 ? Math.floor(Math.random() * 20) : 0;
+  for (let attempt = spread; attempt < spread + 120; attempt += 1) {
+    // Sub-5s jitter keeps starts_at (unique) distinct without moving a slot across the cutoff.
+    const startsAt = new Date(Date.now() + (minutesFromNow + attempt) * 60_000 + Math.floor(Math.random() * 5_000));
+    const minuteStart = new Date(Math.floor(startsAt.getTime() / 60_000) * 60_000);
+    // Cutoff tests (near-term and past slots) need their exact offset, so only far-off slots dodge each other.
+    const { count } = minutesFromNow < 20 ? { count: 0 } : await admin
+      .from("slots")
+      .select("id", { count: "exact", head: true })
+      .gte("starts_at", minuteStart.toISOString())
+      .lt("starts_at", new Date(minuteStart.getTime() + 60_000).toISOString());
+    if (count) continue;
+
+    const { data, error } = await admin
+      .from("slots")
+      .insert({ starts_at: startsAt.toISOString(), capacity })
+      .select("id, starts_at")
+      .single();
+    if (error) throw new Error(`slot: ${error.message}`);
+    return data;
+  }
+  throw new Error("slot: no free minute found");
 }
 
 export async function bookedCount(slotId: string): Promise<number> {

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createMenuItem, createSlot } from "../tests/integration/helpers";
-import { admin, signUpStudent } from "./helpers";
+import { admin, chooseSlotTime, signUpStudent } from "./helpers";
 
 async function addToCart(page: Page, itemId: string, name: string) {
   await page.locator(`[data-item-id="${itemId}"]`).getByRole("button", { name: `Add ${name}` }).click();
@@ -13,7 +13,7 @@ async function openCheckout(page: Page) {
 }
 
 test.describe("student ordering", () => {
-  test("shows the menu, only open slots with seats, and Full slots disabled", async ({ page }) => {
+  test("shows the menu, and the clock only books times that are open with seats", async ({ page }) => {
     const item = await createMenuItem({ name: `Test Dosa ${Date.now()}`, price_paise: 6000 });
     const soldOut = await createMenuItem({ name: `Test Soldout ${Date.now()}`, is_available: false });
     const open = await createSlot(30, 5);
@@ -21,6 +21,7 @@ test.describe("student ordering", () => {
     await admin.from("slots").update({ booked_count: 2 }).eq("id", full.id);
     const closing = await createSlot(2, 5);
     const past = await createSlot(-10, 5);
+    await createSlot(40, 5); // a free time after the full one
 
     await signUpStudent(page);
     await expect(page.locator(`[data-item-id="${soldOut.id}"]`)).toContainText("Sold out");
@@ -28,15 +29,29 @@ test.describe("student ordering", () => {
 
     await addToCart(page, item.id, item.name);
     await openCheckout(page);
+    const place = page.getByRole("button", { name: /Place order/ });
 
-    await expect(page.locator(`[data-slot-id="${open.id}"]`)).toContainText("5 seats left");
-    const fullChip = page.locator(`[data-slot-id="${full.id}"]`);
-    await expect(fullChip).toContainText("Full");
-    await expect(fullChip).toHaveAttribute("aria-disabled", "true");
-    await fullChip.click({ force: true }); // aria-disabled: Playwright would otherwise wait forever
-    await expect(fullChip).toHaveAttribute("aria-checked", "false");
-    await expect(page.locator(`[data-slot-id="${closing.id}"]`)).toHaveCount(0);
-    await expect(page.locator(`[data-slot-id="${past.id}"]`)).toHaveCount(0);
+    // It starts on a free time, so ordering is possible straight away.
+    await expect(place).toBeEnabled();
+
+    await chooseSlotTime(page, open);
+    await expect(page.getByText(/5 seats left at/)).toBeVisible();
+    await expect(place).toBeEnabled();
+
+    // A full time is refused and the nearest free one is offered.
+    await chooseSlotTime(page, full);
+    await expect(page.getByText(/is not available\. \+\d+ minutes? will work/)).toBeVisible();
+    await expect(place).toBeDisabled();
+    await page.getByRole("button", { name: /^Use / }).click();
+    await expect(place).toBeEnabled();
+    await expect(page.getByText(/is not available/)).toHaveCount(0);
+
+    // Times that are inside the cutoff, or already past, are not offered either.
+    for (const unbookable of [closing, past]) {
+      await chooseSlotTime(page, unbookable);
+      await expect(page.getByText(/is not available/)).toBeVisible();
+      await expect(place).toBeDisabled();
+    }
   });
 
   test("places an order and lands on the tracking page", async ({ page }) => {
@@ -47,8 +62,7 @@ test.describe("student ordering", () => {
     await addToCart(page, item.id, item.name);
     await page.locator(`[data-item-id="${item.id}"]`).getByRole("button", { name: `Add one ${item.name}` }).click();
     await openCheckout(page);
-    await expect(page.getByRole("button", { name: /Place order/ })).toBeDisabled();
-    await page.locator(`[data-slot-id="${slot.id}"]`).click();
+    await chooseSlotTime(page, slot);
     await page.getByRole("button", { name: /Place order/ }).click();
 
     await expect(page).toHaveURL(/\/orders\/OAC-[2-9A-HJ-NP-Z]{5}$/);
@@ -63,7 +77,7 @@ test.describe("student ordering", () => {
 
     await addToCart(page, item.id, item.name);
     await openCheckout(page);
-    await page.locator(`[data-slot-id="${slot.id}"]`).click();
+    await chooseSlotTime(page, slot);
     await page.getByRole("button", { name: /Place order/ }).dblclick();
 
     await expect(page).toHaveURL(/\/orders\/OAC-/);
@@ -80,7 +94,7 @@ test.describe("student ordering", () => {
 
     await addToCart(page, item.id, item.name);
     await openCheckout(page);
-    await page.locator(`[data-slot-id="${slot.id}"]`).click();
+    await chooseSlotTime(page, slot);
     await admin.from("menu_items").update({ is_available: false }).eq("id", item.id);
     await page.getByRole("button", { name: /Place order/ }).click();
 

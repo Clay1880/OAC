@@ -2,24 +2,19 @@
 
 -- College domain for the sign-up guard. Must match NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN.
 -- Production sets its real domain directly in app_settings; nothing here applies there.
-update public.app_settings set college_email_domain = 'college.edu';
+update public.app_settings set college_email_domain = 'aitpune.edu.in';
 
+-- The real canteen menu. Prices are in paise.
 insert into public.menu_items (name, description, price_paise, category, sort) values
-  ('Veg Puff',             'Flaky pastry with spiced vegetable filling', 2000, 'Snacks',    10),
-  ('Samosa (2 pcs)',       'Crisp samosas with mint chutney',            2500, 'Snacks',    20),
-  ('Bread Omelette',       'Two-egg omelette between toasted bread',     4000, 'Snacks',    30),
-  ('Veg Sandwich',         'Grilled with cheese and green chutney',      4500, 'Meals',     40),
-  ('Veg Fried Rice',       'Wok-tossed rice with vegetables',            7000, 'Meals',     50),
-  ('Chole Bhature',        'Two bhature with chickpea curry',            8000, 'Meals',     60),
-  ('Masala Chai',          'Hot ginger-cardamom tea',                    1000, 'Drinks',    70),
-  ('Cold Coffee',          'Chilled coffee with ice cream',              5000, 'Drinks',    80),
-  ('Fresh Lime Soda',      'Sweet or salted',                            3000, 'Drinks',    90),
-  ('Gulab Jamun (2 pcs)',  'Warm milk dumplings in syrup',               3000, 'Desserts', 100);
+  ('Samosa (2 pcs)',  'Crisp samosas with mint chutney',          2000, 'Snacks', 10),
+  ('Bread Pakoda',    'Gram-flour fried bread with chutney',      1500, 'Snacks', 20),
+  ('Vada Pav',        'Spiced potato vada in a soft pav',         2000, 'Snacks', 30),
+  ('Veg Puff',        'Flaky pastry with vegetable filling',      2000, 'Snacks', 40),
+  ('Poha',            'Flattened rice with peanuts and lemon',    3000, 'Meals',  50),
+  ('Veg Sandwich',    'Grilled with cheese and green chutney',    4000, 'Meals',  60),
+  ('Masala Dosa',     'Crisp dosa with potato filling, sambar',   6000, 'Meals',  70),
+  ('Chole Bhature',   'Two bhature with chickpea curry',          7000, 'Meals',  80),
+  ('Masala Chai',     'Hot ginger-cardamom tea',                  1000, 'Drinks', 90),
+  ('Cold Coffee',     'Chilled coffee with ice cream',            4000, 'Drinks', 100);
 
--- Eight 15-minute pickup slots starting at the next full hour, campus time.
-insert into public.slots (starts_at, capacity)
-select
-  ((date_trunc('hour', now() at time zone 'Asia/Kolkata') + interval '1 hour') at time zone 'Asia/Kolkata')
-    + (n * interval '15 minutes'),
-  20
-from generate_series(0, 7) as n;
+-- No sample slots: `npx tsx scripts/seed-demo.ts` (or the admin console) opens pickup times.

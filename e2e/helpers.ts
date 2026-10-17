@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
+import { campusClock } from "../src/lib/slots";
 import { admin } from "../tests/integration/helpers";
 
 export { admin };
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
-export const COLLEGE_DOMAIN = process.env.NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN ?? "college.edu";
+export const COLLEGE_DOMAIN = process.env.NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN ?? "aitpune.edu.in";
 
 export const uniqueEmail = () => `s${randomUUID().slice(0, 8)}@${COLLEGE_DOMAIN}`;
 
@@ -99,17 +100,29 @@ export async function staffSignIn(page: Page, loginId: string, password: string)
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
+/** Sets the checkout clock to a slot's start time (campus time), as a student would: hour, minute, AM/PM. */
+export async function chooseSlotTime(page: Page, slot: { starts_at: string }) {
+  const [h, m] = campusClock(slot.starts_at).split(":").map(Number);
+  await page.getByLabel("Hour").selectOption(String(h % 12 || 12));
+  await page.getByLabel("Minute").selectOption(String(m).padStart(2, "0"));
+  await page.getByLabel("AM or PM").selectOption(h >= 12 ? "PM" : "AM");
+}
+
 /** Places a one-item order through the real UI and returns its code, id and the student. */
-export async function placeTestOrder(page: Page, opts: { itemName?: string; pricePaise?: number } = {}) {
+export async function placeTestOrder(
+  page: Page,
+  opts: { itemName?: string; pricePaise?: number; alreadySignedIn?: boolean } = {},
+) {
   const { createMenuItem, createSlot } = await import("../tests/integration/helpers");
   const item = await createMenuItem({ name: opts.itemName ?? `Test Item ${randomUUID().slice(0, 6)}`, price_paise: opts.pricePaise ?? 4500 });
   const slot = await createSlot(30, 5);
-  const student = await signUpStudent(page);
+  const student = opts.alreadySignedIn ? null : await signUpStudent(page);
+  if (opts.alreadySignedIn) await page.goto("/");
 
   await page.locator(`[data-item-id="${item.id}"]`).getByRole("button", { name: `Add ${item.name}` }).click();
   await page.getByRole("button", { name: /View order/ }).click();
   await page.getByRole("link", { name: "Choose pickup time" }).click();
-  await page.locator(`[data-slot-id="${slot.id}"]`).click();
+  await chooseSlotTime(page, slot);
   await page.getByRole("button", { name: /Place order/ }).click();
   await expect(page).toHaveURL(/\/orders\/OAC-/);
 

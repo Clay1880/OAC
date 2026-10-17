@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CartLines } from "@/components/CartLines";
 import { useCart } from "@/components/CartProvider";
-import { SlotPicker } from "@/components/SlotPicker";
+import { PickupTimePicker } from "@/components/PickupTimePicker";
 import { Button, buttonStyles } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -114,7 +114,6 @@ export function CheckoutScreen({
         setFlaggedIds(cart.filter((l) => !open.has(l.itemId)).map((l) => l.itemId));
       }
     } else if (result.error === "SLOT_FULL" || result.error === "SLOT_CLOSED") {
-      setSlotId(null);
       void refresh();
     } else if (result.error === "DEFAULTER") {
       router.refresh();
@@ -151,7 +150,7 @@ export function CheckoutScreen({
         {slots.length === 0 ? (
           <EmptyState title="No slots left today" description="Pickup times are all taken or closed. Try again tomorrow." className="py-6" />
         ) : (
-          <SlotPicker slots={slots} selectedId={selected?.id ?? null} onSelect={setSlotId} />
+          <PickupTimePicker slots={slots} onSelect={setSlotId} />
         )}
       </section>
 
