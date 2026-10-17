@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isStudent } from "@/lib/assist/auth";
-import { chat, chatFallback, type ChatGrounding } from "@/lib/assist/chat";
+import { chat, chatByRules, type ChatGrounding } from "@/lib/assist/chat";
 import { rankCandidates } from "@/lib/assist/engine";
 import { mealMoment } from "@/lib/assist/moment";
 import { rateLimit } from "@/lib/assist/rateLimit";
@@ -18,7 +18,7 @@ const MAX_SLOTS = 6;
 /**
  * Answers a student's message about food, prices and pickup times, and may propose items to add to
  * the cart. Gemini sees only the canteen's menu and open times; without a key, on failure or over
- * the rate limit the student gets a fixed "taking a break" reply, never an error.
+ * the rate limit the rules answer from the menu instead, never an error. Students only.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -41,8 +41,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That is not your canteen." }, { status: 400 });
   }
 
-  // Over the limit: skip the menu and slot queries, there is nothing to ground.
-  if (!rateLimit(userId)) return NextResponse.json(chatFallback());
+  // Over the limit: the rules answer from the menu alone, with no slot or signal queries.
+  if (!rateLimit(userId)) {
+    const { data: rows } = await supabase.from("menu_items").select(MENU_COLUMNS).eq("canteen_id", canteen.id).order("sort");
+    const menu = (rows ?? []) as MenuItem[];
+    const grounding: ChatGrounding = { canteenName: canteen.name, moment: mealMoment(Date.now()), slots: [], items: [] };
+    return NextResponse.json(chatByRules({ turns: req.turns, grounding, menu }));
+  }
 
   const now = new Date();
   const [menu, slotRows] = await Promise.all([
@@ -59,7 +64,8 @@ export async function POST(request: Request) {
 
   const moment = mealMoment(now.getTime());
   const signals = await fetchSignals(supabase, canteen.id);
-  const ranked = rankCandidates((menu.data ?? []) as MenuItem[], {
+  const menuItems = (menu.data ?? []) as MenuItem[];
+  const ranked = rankCandidates(menuItems, {
     moment,
     moods: [],
     vegOnly: false,
@@ -85,5 +91,5 @@ export async function POST(request: Request) {
     })),
   };
 
-  return NextResponse.json(await chat({ turns: req.turns, grounding }));
+  return NextResponse.json(await chat({ turns: req.turns, grounding, menu: menuItems, signals }));
 }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MenuItem } from "@/lib/menu";
 import type { Candidate } from "./engine";
 import type { SuggestInput } from "./gemini";
-import { suggest } from "./suggest";
+import { rulesSuggestion, suggest } from "./suggest";
 
 const item = (id: string, name: string): MenuItem => ({
   id,
@@ -46,7 +46,7 @@ describe("suggest", () => {
       source: "rules",
       headline: "Lunch break picks for you",
       picks: [
-        { id: "a", reason: "Good for lunch break" },
+        { id: "a", reason: "Good for lunch break · Fills you up" },
         { id: "b", reason: "Served warm" },
         { id: "c", reason: "An easy snack" },
       ],
@@ -64,5 +64,39 @@ describe("suggest", () => {
       headline: "Fuel up for the afternoon",
       picks: [{ id: "d", reason: "Cool and filling" }],
     });
+  });
+});
+
+describe("rulesSuggestion", () => {
+  const cand = (id: string, category: string, reasons: string[]): Candidate => ({
+    item: { ...item(id, id), category },
+    score: 1,
+    reasons,
+  });
+  const ids = (cs: Candidate[]) => rulesSuggestion({ moment: "dinner" }, cs).picks.map((p) => p.id);
+
+  it("prefers distinct categories, walking the ranked list", () => {
+    const ranked = [cand("A", "X", ["r"]), cand("B", "X", ["r"]), cand("C", "Y", ["r"]), cand("D", "Z", ["r"])];
+    expect(ids(ranked)).toEqual(["A", "C", "D"]);
+  });
+
+  it("fills the rest by rank when there are fewer than three categories", () => {
+    const one = [cand("A", "X", ["r"]), cand("B", "X", ["r"]), cand("C", "X", ["r"]), cand("D", "X", ["r"])];
+    expect(ids(one)).toEqual(["A", "B", "C"]);
+    const two = [cand("A", "X", ["r"]), cand("B", "X", ["r"]), cand("C", "Y", ["r"]), cand("D", "X", ["r"])];
+    expect(ids(two)).toEqual(["A", "B", "C"]);
+  });
+
+  it("shows the first two distinct reasons, or just the one", () => {
+    const out = rulesSuggestion({ moment: "dinner" }, [
+      cand("A", "X", ["Good for dinner", "Ready fast", "Served warm"]),
+      cand("B", "Y", ["Good for dinner"]),
+      cand("C", "Z", ["Served warm", "Served warm", "Ready fast"]),
+    ]);
+    expect(out.picks).toEqual([
+      { id: "A", reason: "Good for dinner · Ready fast" },
+      { id: "B", reason: "Good for dinner" },
+      { id: "C", reason: "Served warm · Ready fast" },
+    ]);
   });
 });

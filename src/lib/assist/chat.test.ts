@@ -9,6 +9,20 @@ import {
   type ChatGrounding,
 } from "./chat";
 import { parseChatRequest } from "./request";
+import { RULE_CHAT_HELP } from "./ruleChat";
+import type { MenuItem } from "@/lib/menu";
+
+const menuItem = (id: string, name: string, price_paise: number, tags: string[]): MenuItem => ({
+  id,
+  name,
+  description: null,
+  price_paise,
+  category: "Test",
+  is_available: true,
+  sort: 0,
+  tags,
+  meal_moments: [],
+});
 
 const canteenId = "11111111-1111-1111-1111-111111111111";
 const user = (text: string) => ({ role: "user" as const, text });
@@ -164,22 +178,50 @@ describe("chat", () => {
   });
   const input = { turns: [user("Hot and quick")], grounding };
 
-  it("answers with the fixed fallback and nothing to add when no key is set", async () => {
+  it("answers by the menu rules, naming the items, when no key is set", async () => {
     process.env.GEMINI_API_KEY = "";
-    expect(await chat(input)).toEqual({ reply: CHAT_FALLBACK_REPLY, add: [], source: "rules" });
+    const out = await chat(input);
+    expect(out.source).toBe("rules");
+    expect(out.reply).toMatch(/^Here (is|are) /);
+    expect(out.add.length).toBeGreaterThan(0);
+    for (const line of out.add) expect(line.name).toBe(grounding.items.find((i) => i.id === line.id)?.name);
+  });
+
+  it("uses the full menu and signals when the caller passes them", async () => {
+    const menu = [{ ...menuItem("m1", "Samosa", 3000, ["veg", "quick"]) }, { ...menuItem("m2", "Thali", 6000, ["veg"]) }];
+    const out = await chat({ ...input, turns: [user("under ₹40")], menu }, async () => null);
+    expect(out.add).toEqual([{ id: "m1", name: "Samosa", qty: 1 }]);
+  });
+
+  it("falls back to the rules when the model call returns nothing valid", async () => {
+    const out = await chat(input, async () => null);
+    expect(out.source).toBe("rules");
+    expect(out.add.length).toBeGreaterThan(0);
+  });
+
+  it("falls back to the rules when the model call throws", async () => {
+    const out = await chat(input, async () => {
+      throw new Error("boom");
+    });
+    expect(out.source).toBe("rules");
+    expect(out.add.length).toBeGreaterThan(0);
+  });
+
+  it("gives off-topic text the help reply and nothing to add", async () => {
+    const out = await chat({ ...input, turns: [user("write my assignment")] }, async () => null);
+    expect(out).toEqual({ reply: RULE_CHAT_HELP, add: [], source: "rules" });
+  });
+
+  it("keeps the fixed sentence only as the last resort, when the rules themselves throw", async () => {
+    const out = await chat(
+      input,
+      async () => null,
+      () => {
+        throw new Error("rules broke");
+      },
+    );
+    expect(out).toEqual({ reply: CHAT_FALLBACK_REPLY, add: [], source: "rules" });
     expect(CHAT_FALLBACK_REPLY).toBe("The assistant is taking a break. Try the mood picker above.");
-  });
-
-  it("falls back when the model call returns nothing valid", async () => {
-    expect(await chat(input, async () => null)).toEqual({ reply: CHAT_FALLBACK_REPLY, add: [], source: "rules" });
-  });
-
-  it("falls back when the model call throws", async () => {
-    expect(
-      await chat(input, async () => {
-        throw new Error("boom");
-      }),
-    ).toEqual({ reply: CHAT_FALLBACK_REPLY, add: [], source: "rules" });
   });
 
   it("names added items from the menu, never from the model", async () => {

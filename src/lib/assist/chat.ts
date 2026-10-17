@@ -2,7 +2,10 @@ import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { candidateLine, type SuggestInput } from "./gemini";
 import { momentLabel, type MealMoment } from "./moment";
+import { ruleChat, type RuleChatContext, type RuleChatResult } from "./ruleChat";
 import type { ChatTurn } from "./request";
+import type { MenuItem } from "@/lib/menu";
+import type { Signals } from "@/lib/signals";
 
 export type { ChatTurn };
 
@@ -145,21 +148,67 @@ export type ChatResult = {
   source: "gemini" | "rules";
 };
 
-/** The answer when the assistant cannot give one: no key, an error, a timeout, bad JSON or the rate limit. */
+/** The last resort: the rules themselves failed. */
 export const chatFallback = (): ChatResult => ({ reply: CHAT_FALLBACK_REPLY, add: [], source: "rules" });
 
-/** Gemini's reply with item names taken from the menu list, or the fixed fallback. Never throws. */
-export async function chat(
-  input: { turns: ChatTurn[]; grounding: ChatGrounding },
-  gemini: (input: { turns: ChatTurn[]; grounding: ChatGrounding }) => Promise<ChatReply | null> = chatWithGemini,
-): Promise<ChatResult> {
-  let fromModel: ChatReply | null = null;
+type ChatInput = {
+  turns: ChatTurn[];
+  grounding: ChatGrounding;
+  /** The full menu rows, for the rules answer; without them the grounding lines stand in. */
+  menu?: MenuItem[];
+  signals?: Signals;
+};
+
+/** A menu row built from a grounding line, for callers that have no full menu. */
+const fromGrounding = (i: ChatGrounding["items"][number], sort: number): MenuItem => ({
+  id: i.id,
+  name: i.name,
+  description: null,
+  price_paise: i.price_paise,
+  category: i.category,
+  is_available: true,
+  sort,
+  tags: i.tags,
+  meal_moments: [],
+});
+
+/**
+ * The answer without a model: the rules read the student's last message against the menu. Used when
+ * Gemini is unavailable, fails, times out or the caller is rate limited. Falls back to the fixed
+ * sentence only if the rules throw.
+ */
+export function chatByRules(
+  input: ChatInput,
+  rules: (text: string, ctx: RuleChatContext) => RuleChatResult = ruleChat,
+): ChatResult {
   try {
-    fromModel = await gemini(input);
+    const last = [...input.turns].reverse().find((t) => t.role === "user");
+    const items = input.menu ?? input.grounding.items.map(fromGrounding);
+    const out = rules(last?.text ?? "", { moment: input.grounding.moment, items, signals: input.signals });
+    const names = new Map(items.map((i) => [i.id, i.name]));
+    const add = out.add.flatMap((l) => {
+      const name = names.get(l.id);
+      return name ? [{ id: l.id, name, qty: l.qty }] : [];
+    });
+    return { reply: out.reply, add, source: "rules" };
   } catch {
     return chatFallback();
   }
-  if (!fromModel) return chatFallback();
+}
+
+/** Gemini's reply with item names taken from the menu list, or the rules answer. Never throws. */
+export async function chat(
+  input: ChatInput,
+  gemini: (input: { turns: ChatTurn[]; grounding: ChatGrounding }) => Promise<ChatReply | null> = chatWithGemini,
+  rules: (text: string, ctx: RuleChatContext) => RuleChatResult = ruleChat,
+): Promise<ChatResult> {
+  let fromModel: ChatReply | null = null;
+  try {
+    fromModel = await gemini({ turns: input.turns, grounding: input.grounding });
+  } catch {
+    return chatByRules(input, rules);
+  }
+  if (!fromModel) return chatByRules(input, rules);
   const names = new Map(input.grounding.items.map((i) => [i.id, i.name]));
   const add = fromModel.add.flatMap((l) => {
     const name = names.get(l.id);

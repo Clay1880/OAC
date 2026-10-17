@@ -13,7 +13,26 @@ export async function suggest(
   return rulesSuggestion(input, candidates);
 }
 
-/** The rules-engine answer: top three candidates, each with its strongest reason. */
+const RULES_PICKS = 3;
+
+/** Up to three candidates, one per category first (in rank order), then the best of the rest; shown in rank order. */
+function variedTop(candidates: Candidate[]): Candidate[] {
+  const chosen = new Set<Candidate>();
+  const categories = new Set<string>();
+  for (const c of candidates) {
+    if (chosen.size === RULES_PICKS) break;
+    if (categories.has(c.item.category)) continue;
+    categories.add(c.item.category);
+    chosen.add(c);
+  }
+  for (const c of candidates) {
+    if (chosen.size === RULES_PICKS) break;
+    chosen.add(c);
+  }
+  return candidates.filter((c) => chosen.has(c));
+}
+
+/** The rules-engine answer: up to three candidates from different categories, each with its two strongest reasons. */
 export function rulesSuggestion(
   input: Pick<SuggestInput, "moment">,
   candidates: Candidate[],
@@ -21,6 +40,6 @@ export function rulesSuggestion(
   return {
     source: "rules",
     headline: `${momentLabel(input.moment)} picks for you`,
-    picks: candidates.slice(0, 3).map((c) => ({ id: c.item.id, reason: c.reasons[0] })),
+    picks: variedTop(candidates).map((c) => ({ id: c.item.id, reason: [...new Set(c.reasons)].slice(0, 2).join(" · ") })),
   };
 }

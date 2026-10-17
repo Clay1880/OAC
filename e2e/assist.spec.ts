@@ -38,12 +38,18 @@ test.describe("chat assistant", () => {
 
     await sheet.getByRole("button", { name: "Hot and quick" }).click();
 
-    // No key in the test environment: the fixed fallback reply. With a key, any model reply lands here too.
+    // No key in the test environment: the rules answer from the menu, with items to add.
     const log = sheet.getByRole("log");
     await expect(log).toContainText("Hot and quick");
-    await expect(log).toContainText(/\S+/);
     await expect(sheet.getByText("Thinking…")).toBeHidden();
     await expect(log.getByText("Assistant:")).toHaveCount(1);
+    const add = sheet.getByRole("button", { name: "Add to cart" });
+    await expect(add).toBeVisible();
+
+    await add.click();
+    await expect(sheet.getByRole("button", { name: "Added ✓" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: /View order/ })).toBeVisible();
     await expect(page.getByText("Check your connection")).toHaveCount(0);
   });
 });
