@@ -55,11 +55,13 @@ export async function fillOnboarding(page: Page, fields: { name?: string; phone?
 
 /** Brand-new student: OTP sign-in plus onboarding, ending on the student home. */
 export async function signUpStudent(page: Page, email = uniqueEmail()) {
+  const reg = `R${randomUUID().slice(0, 8)}`;
   await signInWithOtp(page, email);
   await expect(page).toHaveURL(/\/onboarding/);
-  await fillOnboarding(page);
+  await fillOnboarding(page, { reg });
   await expect(page).toHaveURL(/\/$/);
-  return email;
+  const { data } = await admin.from("profiles").select("id").eq("reg_no", reg.toUpperCase()).single();
+  return { email, reg, id: data!.id as string };
 }
 
 /** Staff or admin account with a known login ID, created the way the admin console will. */
