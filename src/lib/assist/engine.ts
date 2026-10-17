@@ -1,5 +1,5 @@
 import type { MenuItem } from "@/lib/menu";
-import type { Signals } from "@/lib/signals";
+import { topPopularIds, type Signals } from "@/lib/signals";
 import { MOODS, type MoodId } from "./moods";
 import { momentLabel, type MealMoment } from "./moment";
 
@@ -7,7 +7,6 @@ export type Candidate = { item: MenuItem; score: number; reasons: string[] };
 
 const MAX_CANDIDATES = 12;
 const MAX_REASONS = 3;
-const TOP_POPULAR = 5;
 
 const TAG_REASONS: Record<string, string> = {
   hot: "Served warm",
@@ -37,13 +36,7 @@ export function rankCandidates(
   const wants = new Set(picked.flatMap((m) => m.wants));
   const avoids = new Set(picked.flatMap((m) => m.avoids));
 
-  const topPopular = new Set(
-    Object.entries(ctx.signals?.popular ?? {})
-      .filter(([, count]) => count > 0)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, TOP_POPULAR)
-      .map(([id]) => id),
-  );
+  const topPopular = new Set(ctx.signals ? topPopularIds(ctx.signals) : []);
 
   const ranked: Candidate[] = [];
   for (const item of items) {

@@ -113,6 +113,19 @@ describe("popular_items", () => {
     expect(await popular(outsider, canteen.id)).toEqual([]);
   });
 
+  it("counts only approved canteens for a student, while the canteen's own staff still see them", async () => {
+    const canteen = await createCanteen();
+    const item = await createMenuItem({ canteen_id: canteen.id });
+    const student = await createUser("student", { canteenId: canteen.id });
+    const staff = await createUser("staff", { canteenId: canteen.id });
+    await order(student, canteen.id, item.id);
+    expect(countOf(await popular(student, canteen.id), item.id)).toBe(1);
+
+    await admin.from("canteens").update({ status: "pending" }).eq("id", canteen.id);
+    expect(await popular(student, canteen.id)).toEqual([]);
+    expect(countOf(await popular(staff, canteen.id), item.id)).toBe(1);
+  });
+
   it("gives a signed-out caller zero rows or a permission error", async () => {
     const canteen = await createCanteen();
     const item = await createMenuItem({ canteen_id: canteen.id });

@@ -42,6 +42,32 @@ describe("parsePicks", () => {
   });
 });
 
+describe("parsePicks caps", () => {
+  it("trims a reason and cuts it to 200 characters, and the headline to 80", () => {
+    const out = parsePicks(
+      { headline: `  ${"h".repeat(100)}  `, picks: [{ id: "a", reason: `  ${"r".repeat(300)} ` }] },
+      allowed,
+    );
+    expect(out?.headline).toBe("h".repeat(80));
+    expect(out?.picks[0].reason).toBe("r".repeat(200));
+  });
+
+  it("drops a pick whose reason is empty after trimming", () => {
+    const out = parsePicks(
+      {
+        headline: "h",
+        picks: [
+          { id: "a", reason: "   " },
+          { id: "b", reason: "Warm" },
+        ],
+      },
+      allowed,
+    );
+    expect(out?.picks).toEqual([{ id: "b", reason: "Warm" }]);
+    expect(parsePicks({ headline: "h", picks: [{ id: "a", reason: " " }] }, allowed)).toBeNull();
+  });
+});
+
 describe("suggestWithGemini", () => {
   const saved = process.env.GEMINI_API_KEY;
   afterEach(() => {

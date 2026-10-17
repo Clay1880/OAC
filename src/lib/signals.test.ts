@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MenuItem } from "@/lib/menu";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { emptySignals, fetchSignals, topPopular, topUsual, type Signals } from "./signals";
+import { badgesFor, emptySignals, fetchSignals, topPopular, topPopularIds, topUsual, type Signals } from "./signals";
 
 let n = 0;
 const item = (over: Partial<MenuItem> & { name: string }): MenuItem => ({
@@ -78,5 +78,62 @@ describe("fetchSignals", () => {
       rpc: () => Promise.reject(new Error("boom")),
     } as unknown as SupabaseClient;
     expect(await fetchSignals(broken, "canteen")).toEqual(emptySignals());
+  });
+});
+
+describe("topPopularIds", () => {
+  it("orders by count desc then id ascending and keeps five", () => {
+    const popular = { z: 3, b: 3, a: 3, c: 9, d: 1, e: 2, f: 2 };
+    expect(topPopularIds({ usual: {}, popular })).toEqual(["c", "a", "b", "z", "e"]);
+    expect(topPopularIds({ usual: {}, popular }, 2)).toEqual(["c", "a"]);
+  });
+
+  it("skips zero counts and is empty for empty signals", () => {
+    expect(topPopularIds({ usual: {}, popular: { a: 0, b: 1 } })).toEqual(["b"]);
+    expect(topPopularIds(emptySignals())).toEqual([]);
+  });
+});
+
+describe("badgesFor", () => {
+  it("flags popular only for the top five, the same set the ranking bonus uses", () => {
+    const popular = Object.fromEntries(["a", "b", "c", "d", "e", "f"].map((id, i) => [id, 10 - i]));
+    const signals: Signals = { usual: { f: 2 }, popular };
+    expect(badgesFor("a", signals)).toEqual(["popular"]);
+    expect(badgesFor("f", signals)).toEqual(["usual"]);
+    expect(badgesFor("zz", signals)).toEqual([]);
+  });
+});
+
+describe("fetchSignals usual", () => {
+  /** Records the order_items query so the test can see how it was scoped. */
+  function recording(sub: string | undefined) {
+    const calls: [string, ...unknown[]][] = [];
+    const query: Record<string, unknown> = {};
+    for (const name of ["select", "eq", "not", "limit"]) {
+      query[name] = (...args: unknown[]) => {
+        calls.push([name, ...args]);
+        return query;
+      };
+    }
+    query.then = (resolve: (v: unknown) => void) => resolve({ data: [], error: null });
+    const client = {
+      auth: { getClaims: async () => ({ data: sub ? { claims: { sub } } : null, error: null }) },
+      from: () => query,
+      rpc: async () => ({ data: [], error: null }),
+    } as unknown as SupabaseClient;
+    return { client, calls };
+  }
+
+  it("scopes the usual to the signed-in user and caps the rows", async () => {
+    const { client, calls } = recording("me");
+    await fetchSignals(client, "canteen");
+    expect(calls).toContainEqual(["eq", "orders.student_id", "me"]);
+    expect(calls).toContainEqual(["limit", 1000]);
+  });
+
+  it("has an empty usual and no query when nobody is signed in (a staff member has no orders of their own)", async () => {
+    const { client, calls } = recording(undefined);
+    expect((await fetchSignals(client, "canteen")).usual).toEqual({});
+    expect(calls).toEqual([]);
   });
 });

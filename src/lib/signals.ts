@@ -6,15 +6,20 @@ export type Signals = { usual: Record<string, number>; popular: Record<string, n
 
 export const emptySignals = (): Signals => ({ usual: {}, popular: {} });
 
-type UsualRow = { menu_item_id: string; orders: { status: string; canteen_id: string } | { status: string; canteen_id: string }[] | null };
+type UsualRow = { menu_item_id: string };
 
 async function fetchUsual(supabase: SupabaseClient, canteenId: string): Promise<Record<string, number>> {
-  // RLS already limits order_items to the signed-in student's own orders.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return {};
+  // RLS limits order_items to what this user may see (staff see their canteen's); the student filter makes it "mine".
   const { data, error } = await supabase
     .from("order_items")
-    .select("menu_item_id, orders!inner(status, canteen_id)")
+    .select("menu_item_id, orders!inner(status, canteen_id, student_id)")
     .eq("orders.canteen_id", canteenId)
-    .not("orders.status", "in", "(cancelled,no_show)");
+    .eq("orders.student_id", userId)
+    .not("orders.status", "in", "(cancelled,no_show)")
+    .limit(1000);
   if (error || !data) return {};
   const usual: Record<string, number> = {};
   for (const row of data as unknown as UsualRow[]) usual[row.menu_item_id] = (usual[row.menu_item_id] ?? 0) + 1;
@@ -55,10 +60,19 @@ export function topPopular(signals: Signals, items: MenuItem[], n = 6): MenuItem
   return top(signals.popular, items, n);
 }
 
-/** Plain flags for the model: the student's usual, or popular on campus. Never counts. */
+/** Ids of the campus favourites: count desc, then id ascending, at most `n`. Shared by the ranking bonus and the badge. */
+export function topPopularIds(signals: Signals, n = 5): string[] {
+  return Object.entries(signals.popular)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .slice(0, n)
+    .map(([id]) => id);
+}
+
+/** Plain flags for the model: the student's usual, or a top-five campus favourite. Never counts. */
 export function badgesFor(id: string, signals: Signals): ("usual" | "popular")[] {
   const badges: ("usual" | "popular")[] = [];
   if ((signals.usual[id] ?? 0) > 0) badges.push("usual");
-  if ((signals.popular[id] ?? 0) > 0) badges.push("popular");
+  if (topPopularIds(signals).includes(id)) badges.push("popular");
   return badges;
 }

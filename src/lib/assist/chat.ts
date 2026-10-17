@@ -1,3 +1,4 @@
+import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { candidateLine, type SuggestInput } from "./gemini";
 import { momentLabel, type MealMoment } from "./moment";
@@ -23,6 +24,7 @@ export const CHAT_FALLBACK_REPLY = "The assistant is taking a break. Try the moo
 const DEFAULT_TIMEOUT_MS = 5000;
 const MAX_LINES = 5;
 const MAX_QTY = 5;
+const MAX_REPLY = 400;
 
 export const CHAT_SCHEMA = {
   type: "object",
@@ -85,7 +87,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  */
 export function parseChatReply(raw: unknown, allowedIds: Set<string>): ChatReply | null {
   if (!isRecord(raw) || typeof raw.reply !== "string" || !Array.isArray(raw.add)) return null;
-  const reply = raw.reply.trim();
+  const reply = raw.reply.trim().slice(0, MAX_REPLY).trim();
   if (reply === "") return null;
   const add: ChatLine[] = [];
   const seen = new Set<string>();

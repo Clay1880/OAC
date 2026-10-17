@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isStudent } from "@/lib/assist/auth";
 import { chat, chatFallback, type ChatGrounding } from "@/lib/assist/chat";
 import { rankCandidates } from "@/lib/assist/engine";
 import { mealMoment } from "@/lib/assist/moment";
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!(await isStudent(supabase, userId))) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   let body: unknown;
   try {

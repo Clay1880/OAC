@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isStudent } from "@/lib/assist/auth";
 import { rankCandidates } from "@/lib/assist/engine";
 import type { SuggestInput } from "@/lib/assist/gemini";
 import { mealMoment } from "@/lib/assist/moment";
@@ -6,20 +7,21 @@ import { rateLimit } from "@/lib/assist/rateLimit";
 import { parseSuggestRequest } from "@/lib/assist/request";
 import { rulesSuggestion, suggest } from "@/lib/assist/suggest";
 import { MENU_COLUMNS, type MenuItem } from "@/lib/menu";
-import { badgesFor, fetchSignals } from "@/lib/signals";
+import { badgesFor, emptySignals, fetchSignals } from "@/lib/signals";
 import { createClient } from "@/lib/supabase/server";
 import { studentCanteen } from "@/lib/tenancy/current";
 
 /**
  * Suggests up to three menu items for the signed-in student's mood and meal moment. Gemini picks
  * from the rules engine's candidates; without a key, on failure, or over the rate limit the rules
- * engine answers on its own.
+ * engine answers on its own. Students only.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!(await isStudent(supabase, userId))) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   let body: unknown;
   try {
@@ -35,6 +37,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That is not your canteen." }, { status: 400 });
   }
 
+  // Decide before loading anything: a limited caller still gets the rules answer, which needs the menu but no signals.
+  const withinLimit = rateLimit(userId);
+
   const { data: rows, error } = await supabase
     .from("menu_items")
     .select(MENU_COLUMNS)
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
   const items = (rows ?? []) as MenuItem[];
 
   const moment = mealMoment(Date.now());
-  const signals = await fetchSignals(supabase, canteen.id);
+  const signals = withinLimit ? await fetchSignals(supabase, canteen.id) : emptySignals();
   const candidates = rankCandidates(items, { moment, moods: req.moods, vegOnly: req.vegOnly, signals });
   const input: SuggestInput = {
     canteenName: canteen.name,
@@ -61,7 +66,7 @@ export async function POST(request: Request) {
     })),
   };
 
-  const result = rateLimit(userId) ? await suggest(input, candidates) : rulesSuggestion(input, candidates);
+  const result = withinLimit ? await suggest(input, candidates) : rulesSuggestion(input, candidates);
 
   const byId = new Map(candidates.map((c) => [c.item.id, c.item]));
   const picks = result.picks.flatMap((p) => {

@@ -94,6 +94,23 @@ describe("parseChatReply", () => {
   });
 });
 
+describe("parseChatReply caps", () => {
+  const ids = new Set(["a"]);
+
+  it("cuts the reply to 400 characters after trimming", () => {
+    const out = parseChatReply({ reply: `  ${"x".repeat(500)}  `, add: [] }, ids);
+    expect(out?.reply).toBe("x".repeat(400));
+  });
+
+  it("keeps a short reply whole", () => {
+    expect(parseChatReply({ reply: "Hi there", add: [] }, ids)?.reply).toBe("Hi there");
+  });
+
+  it("treats a blank reply as missing", () => {
+    expect(parseChatReply({ reply: "   ", add: [] }, ids)).toBeNull();
+  });
+});
+
 describe("buildChatContents", () => {
   it("starts with the grounding block and ends with the last user turn", () => {
     const contents = buildChatContents([user("hi"), model("Hello"), user("Something light")], grounding);

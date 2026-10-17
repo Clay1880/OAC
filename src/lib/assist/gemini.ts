@@ -1,3 +1,4 @@
+import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { momentLabel, type MealMoment } from "./moment";
 import { MOODS, type MoodId } from "./moods";
@@ -22,6 +23,8 @@ export type SuggestResult = { headline: string; picks: Pick[] };
 
 const DEFAULT_TIMEOUT_MS = 4000;
 const MAX_PICKS = 3;
+const MAX_REASON = 200;
+const MAX_HEADLINE = 80;
 
 export const SUGGEST_SCHEMA = {
   type: "object",
@@ -61,11 +64,13 @@ export function parsePicks(raw: unknown, allowedIds: Set<string>): SuggestResult
   for (const p of raw.picks) {
     if (!isRecord(p) || typeof p.id !== "string" || typeof p.reason !== "string") continue;
     if (!allowedIds.has(p.id) || seen.has(p.id)) continue;
+    const reason = p.reason.trim().slice(0, MAX_REASON).trim();
+    if (reason === "") continue;
     seen.add(p.id);
-    picks.push({ id: p.id, reason: p.reason });
+    picks.push({ id: p.id, reason });
     if (picks.length === MAX_PICKS) break;
   }
-  const headline = raw.headline.trim();
+  const headline = raw.headline.trim().slice(0, MAX_HEADLINE).trim();
   if (picks.length === 0 || headline === "") return null;
   return { headline, picks };
 }
