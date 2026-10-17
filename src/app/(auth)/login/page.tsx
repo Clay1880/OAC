@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
 import { isDemoLoginEnabled } from "@/lib/config";
+import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Sign in" };
 
+/** Allowed sign-up domains, the same rows the database guard checks. Empty when none (or unreadable). */
+async function collegeDomains(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("college_domains").select("domain").order("domain");
+  return (data ?? []).map((row) => row.domain as string);
+}
+
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { inactive, expired } = await searchParams;
+  const [{ inactive, expired }, domains] = await Promise.all([searchParams, collegeDomains()]);
   return (
     <AuthShell
       title="Order ahead, skip the queue."
@@ -39,7 +47,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           This account has been deactivated. Please ask the canteen admin.
         </p>
       )}
-      <LoginForm />
+      <LoginForm domains={domains} />
     </AuthShell>
   );
 }

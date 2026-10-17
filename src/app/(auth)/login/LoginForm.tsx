@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { COLLEGE_EMAIL_DOMAIN, requireCollegeEmailDomain } from "@/lib/config";
 import { isCollegeEmail } from "@/lib/auth/validate";
 import { createClient } from "@/lib/supabase/browser";
 
-export function LoginForm() {
+/** `domains`: every allowed sign-up domain (college_domains), read by the login page on the server. */
+export function LoginForm({ domains }: { domains: string[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string>();
@@ -18,17 +18,14 @@ export function LoginForm() {
     event.preventDefault();
     setError(undefined);
 
-    let domain: string;
-    try {
-      domain = requireCollegeEmailDomain();
-    } catch {
+    if (domains.length === 0) {
       setError("Sign-in is not set up yet. Please tell the canteen admin.");
       return;
     }
 
     const address = email.trim().toLowerCase();
-    if (!isCollegeEmail(address, domain)) {
-      setError(`Use your college email address (ending in @${domain}).`);
+    if (!isCollegeEmail(address, domains)) {
+      setError(`Use your college email address (ending in @${domains[0]}).`);
       return;
     }
 
@@ -58,7 +55,7 @@ export function LoginForm() {
         inputMode="email"
         autoComplete="email"
         autoCapitalize="none"
-        placeholder={`you@${COLLEGE_EMAIL_DOMAIN ?? "college.edu"}`}
+        placeholder={`you@${domains[0] ?? "college.edu"}`}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         error={error}

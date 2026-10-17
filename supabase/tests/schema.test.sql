@@ -1,18 +1,23 @@
 -- pgTAP tests: schema constraints, RLS, staff_orders_v, college-email guard, canteen tenancy.
 -- Run with `npx supabase test db` (after `npx supabase db reset`, so seed.sql has set the college domain).
 begin;
-select plan(80);
+select plan(79);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (inserted as the superuser, so RLS and grants do not apply)
 -- ---------------------------------------------------------------------------
--- The domain comes from app_settings (seeded locally as aitpune.edu.in); never hard-coded here.
+-- The domain comes from college_domains (seeded locally as aitpune.edu.in); never hard-coded here.
 create temp table t_domain on commit drop as
-  select college_email_domain as d from public.app_settings;
+  select d.domain as d
+  from public.college_domains d
+  join public.colleges c on c.id = d.college_id
+  where c.slug = 'ait-pune'
+  order by d.domain
+  limit 1;
 grant select on t_domain to authenticated;
 
 select ok((select d is not null and d <> '' from t_domain),
-  'precondition: app_settings.college_email_domain is seeded');
+  'precondition: the ait-pune college has a domain in college_domains');
 
 -- Tenancy: college c0 (ait-pune) and canteen oac come from the 0008 backfill.
 -- College B (cbcb...) is a second college; canteens k2 (approved) and kp (pending) are in c0,
@@ -180,15 +185,24 @@ select throws_ok(
   $$update auth.users set email = 'promoted@staff.oac.local' where id = '11111111-1111-1111-1111-111111111111'$$,
   'P0001', null, 'student cannot change email to a staff login address');
 
-update public.app_settings set college_email_domain = null;
+select lives_ok(
+  $$insert into auth.users (id, email) values (gen_random_uuid(), 'a@other.test')$$,
+  'email on the second college''s domain is accepted');
 select throws_ok(
-  $$insert into auth.users (id, email) values (gen_random_uuid(), 'a@' || (select d from t_domain))$$,
+  $$insert into auth.users (id, email) values (gen_random_uuid(), 'a@nowhere.test')$$,
+  'P0001', null, 'email on a domain of no college is rejected');
+
+-- Empty college_domains (inside this transaction only): the guard must fail closed.
+create temp table t_domains_backup on commit drop as select * from public.college_domains;
+delete from public.college_domains;
+select throws_ok(
+  $$insert into auth.users (id, email) values (gen_random_uuid(), 'closed@' || (select d from t_domain))$$,
   'P0001', null, 'guard fails closed when no college domain is configured');
 select lives_ok(
   $$insert into auth.users (id, email, raw_app_meta_data)
     values (gen_random_uuid(), 'y@staff.oac.local', '{"provisioned": true}')$$,
   'provisioned users still work when no college domain is configured');
-update public.app_settings set college_email_domain = (select d from t_domain);
+insert into public.college_domains select * from t_domains_backup;
 
 -- ---------------------------------------------------------------------------
 -- (b) Student order isolation and canteen visibility
@@ -252,9 +266,6 @@ select is_empty(
 select throws_ok(
   $$insert into public.menu_items (canteen_id, name, price_paise, category) values ((select oac from t_ids), 'x', 1, 'x')$$,
   '42501', null, 'student cannot insert menu items');
-select is_empty(
-  $$with u as (update public.app_settings set order_cutoff_minutes = 0 returning 1) select * from u$$,
-  'student cannot update app_settings (0 rows)');
 
 -- ---------------------------------------------------------------------------
 -- (d) staff_orders_v
@@ -403,12 +414,7 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 -- Structure
 -- ---------------------------------------------------------------------------
-select is((select count(*)::int from public.app_settings), 1, 'app_settings has exactly one row');
-select throws_ok($$insert into public.app_settings (order_cutoff_minutes) values (1)$$, '23505', null,
-  'app_settings cannot get a second row');
-select results_eq(
-  $$select order_cutoff_minutes, no_show_hold_minutes from public.app_settings$$,
-  $$values (5, 15)$$, 'app_settings defaults are 5 and 15');
+select hasnt_table('public', 'app_settings', 'app_settings is gone: college_domains is the only domain source');
 select has_index('public', 'orders', 'orders_slot_id_status_idx', 'index on orders(slot_id, status)');
 select has_index('public', 'orders', 'orders_student_id_created_at_idx', 'index on orders(student_id, created_at desc)');
 select has_index('public', 'orders', 'orders_status_created_at_idx', 'index on orders(status, created_at)');

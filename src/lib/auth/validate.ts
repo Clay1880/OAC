@@ -1,7 +1,10 @@
-/** True when `email` is a single address on exactly `domain` (no subdomains). Mirrors the database guard. */
-export function isCollegeEmail(email: string, domain: string): boolean {
+/**
+ * True when `email` is a single address on exactly one of `domains` (no subdomains), the rows of
+ * college_domains. Mirrors the database guard; an empty list accepts nothing.
+ */
+export function isCollegeEmail(email: string, domains: readonly string[]): boolean {
   const parts = email.trim().toLowerCase().split("@");
-  return parts.length === 2 && parts[0] !== "" && parts[1] === domain.toLowerCase();
+  return parts.length === 2 && parts[0] !== "" && domains.some((d) => d.toLowerCase() === parts[1]);
 }
 
 /** Ten-digit Indian mobile number from what the student typed, or null. Mirrors `complete_profile`. */

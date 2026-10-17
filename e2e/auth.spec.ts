@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 import {
   admin,
-  COLLEGE_DOMAIN,
+  collegeDomain,
   createStaffLogin,
   fillOnboarding,
   mailCount,
@@ -13,6 +13,7 @@ import {
   staffSignIn,
   uniqueEmail,
 } from "./helpers";
+import { seededCollege } from "../tests/integration/helpers";
 
 test.describe("student sign-in", () => {
   test("a non-college email shows a clear error before any code is sent", async ({ page }) => {
@@ -21,13 +22,15 @@ test.describe("student sign-in", () => {
     await page.getByLabel("College email").fill(email);
     await page.getByRole("button", { name: "Send code" }).click();
 
-    await expect(page.locator("main").getByRole("alert")).toContainText(`@${COLLEGE_DOMAIN}`);
+    await expect(page.locator("main").getByRole("alert")).toHaveText(
+      `Use your college email address (ending in @${await collegeDomain()}).`,
+    );
     await expect(page).toHaveURL(/\/login/);
     expect(await mailCount(email)).toBe(0);
   });
 
   test("a new student verifies by code, completes onboarding and lands on the home page", async ({ page }) => {
-    const email = uniqueEmail();
+    const email = await uniqueEmail();
     await signInWithOtp(page, email);
     await expect(page).toHaveURL(/\/onboarding/);
 
@@ -37,7 +40,7 @@ test.describe("student sign-in", () => {
   });
 
   test("a wrong code is refused", async ({ page }) => {
-    const email = uniqueEmail();
+    const email = await uniqueEmail();
     await page.goto("/login");
     await page.getByLabel("College email").fill(email);
     await page.getByRole("button", { name: "Send code" }).click();
@@ -51,7 +54,7 @@ test.describe("student sign-in", () => {
   });
 
   test("phone must be a 10-digit Indian mobile number", async ({ page }) => {
-    await signInWithOtp(page, uniqueEmail());
+    await signInWithOtp(page, await uniqueEmail());
     await expect(page).toHaveURL(/\/onboarding/);
 
     await fillOnboarding(page, { phone: "12345" });
@@ -67,14 +70,16 @@ test.describe("student sign-in", () => {
       email_confirm: true,
       app_metadata: { provisioned: true },
     });
-    await admin.from("profiles").insert({
+    const { error: profileError } = await admin.from("profiles").insert({
       id: first.user!.id,
       full_name: "Earlier Student",
       phone: "9876543210",
       reg_no: reg,
+      college_id: (await seededCollege()).id,
     });
+    expect(profileError).toBeNull();
 
-    await signInWithOtp(page, uniqueEmail());
+    await signInWithOtp(page, await uniqueEmail());
     await fillOnboarding(page, { reg: reg.toLowerCase() });
 
     await expect(page.locator("main").getByRole("alert")).toContainText("REG_NO_TAKEN");
@@ -82,7 +87,7 @@ test.describe("student sign-in", () => {
   });
 
   test("a session whose account was deleted is signed out with a clear message, not a vague error", async ({ page }) => {
-    const email = uniqueEmail();
+    const email = await uniqueEmail();
     await signInWithOtp(page, email);
     await expect(page).toHaveURL(/\/onboarding/);
     // The account vanishes while the browser still holds its login (e.g. a database reset).
@@ -100,7 +105,7 @@ test.describe("student sign-in", () => {
 
 test.describe("roles", () => {
   test("nobody can become staff by signing up with any metadata", async ({ page }) => {
-    const email = uniqueEmail();
+    const email = await uniqueEmail();
     const anon = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321",
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??

@@ -6,9 +6,16 @@ import { admin, seededCanteen, seededCollege } from "../tests/integration/helper
 export { admin };
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
-export const COLLEGE_DOMAIN = process.env.NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN ?? "aitpune.edu.in";
 
-export const uniqueEmail = () => `s${randomUUID().slice(0, 8)}@${COLLEGE_DOMAIN}`;
+/** The first sign-up domain in college_domains, the one the login form names in its hint and error. */
+export async function collegeDomain(): Promise<string> {
+  const { data, error } = await admin.from("college_domains").select("domain").order("domain").limit(1).single();
+  if (error) throw new Error(`college domain: ${error.message}`);
+  return data.domain as string;
+}
+
+/** A fresh student address on the seeded college's domain. */
+export const uniqueEmail = async () => `s${randomUUID().slice(0, 8)}@${(await seededCollege()).domain}`;
 
 type MailpitMessage = { ID: string };
 
@@ -55,7 +62,8 @@ export async function fillOnboarding(page: Page, fields: { name?: string; phone?
 }
 
 /** Brand-new student: OTP sign-in plus onboarding, ending on the student home. */
-export async function signUpStudent(page: Page, email = uniqueEmail()) {
+export async function signUpStudent(page: Page, givenEmail?: string) {
+  const email = givenEmail ?? (await uniqueEmail());
   const reg = `R${randomUUID().slice(0, 8)}`;
   await signInWithOtp(page, email);
   await expect(page).toHaveURL(/\/onboarding/);

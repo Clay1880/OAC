@@ -1,10 +1,8 @@
 -- Local development seed. Runs on `supabase db reset`. Creates no users.
 
--- College domain for the sign-up guard. Must match NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN.
--- Production sets its real domain directly in app_settings; nothing here applies there.
-update public.app_settings set college_email_domain = 'aitpune.edu.in';
-
--- The same domain picks the college for new sign-ups (0008 backfills college ait-pune).
+-- College domain for the sign-up guard and the login form: college_domains is the only source.
+-- It also picks the college for new sign-ups (0008 backfills college ait-pune).
+-- Production adds its real domains directly to college_domains; nothing here applies there.
 insert into public.college_domains (domain, college_id)
 select 'aitpune.edu.in', id from public.colleges where slug = 'ait-pune'
 on conflict do nothing;
