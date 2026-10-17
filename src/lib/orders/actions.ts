@@ -1,5 +1,6 @@
 "use server";
 
+import { sendPushToUser } from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { toPlaceOrderError, type Order, type PlaceOrderError } from "./types";
 
@@ -23,4 +24,40 @@ export async function cancelOrder(orderId: string): Promise<{ ok: boolean }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("cancel_order", { p_order_id: orderId });
   return { ok: !error };
+}
+
+type LifecycleResult = { ok: true; order: Order } | { ok: false; error: string };
+
+async function runLifecycle(
+  fn: "accept_order" | "mark_ready" | "collect_order" | "flag_no_show",
+  orderId: string,
+): Promise<LifecycleResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(fn, { p_order_id: orderId });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, order: data as Order };
+}
+
+export async function acceptOrder(orderId: string): Promise<LifecycleResult> {
+  return runLifecycle("accept_order", orderId);
+}
+
+export async function markReady(orderId: string): Promise<LifecycleResult> {
+  const result = await runLifecycle("mark_ready", orderId);
+  if (result.ok) {
+    await sendPushToUser(result.order.student_id, {
+      title: "Your order is ready",
+      body: `Your order ${result.order.code} is ready — show this ID at the counter.`,
+      url: `/orders/${result.order.code}`,
+    });
+  }
+  return result;
+}
+
+export async function collectOrder(orderId: string): Promise<LifecycleResult> {
+  return runLifecycle("collect_order", orderId);
+}
+
+export async function flagNoShow(orderId: string): Promise<LifecycleResult> {
+  return runLifecycle("flag_no_show", orderId);
 }
