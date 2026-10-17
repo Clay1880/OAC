@@ -30,12 +30,22 @@ type ToastApi = {
   dismiss: (id: number) => void;
 };
 
+type ToastHost = {
+  items: ToastItem[];
+  dismiss: (id: number) => void;
+  /** A modal <dialog> is open: it makes everything outside itself inert and paints above it. */
+  modalCount: number;
+  acquireModal: () => () => void;
+};
+
 const ToastContext = createContext<ToastApi | null>(null);
+const ToastHostContext = createContext<ToastHost | null>(null);
 
 const MAX_VISIBLE = 3;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  const [modalCount, setModalCount] = useState(0);
   const nextId = useRef(1);
 
   const dismiss = useCallback((id: number) => {
@@ -57,20 +67,60 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const api = useMemo(() => ({ toast, dismiss }), [toast, dismiss]);
 
+  const acquireModal = useCallback(() => {
+    setModalCount((n) => n + 1);
+    return () => setModalCount((n) => n - 1);
+  }, []);
+  const host = useMemo(
+    () => ({ items, dismiss, modalCount, acquireModal }),
+    [items, dismiss, modalCount, acquireModal],
+  );
+
   return (
     <ToastContext.Provider value={api}>
-      {children}
-      <div
-        role="region"
-        aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-md flex-col gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
-      >
-        {items.map((item) => (
-          <ToastCard key={item.id} item={item} onDismiss={dismiss} />
-        ))}
-      </div>
+      <ToastHostContext.Provider value={host}>
+        {children}
+        {/* While a modal sheet is open, the sheet renders its own region inside the dialog. */}
+        {modalCount === 0 && <ToastRegion placement="bottom" />}
+      </ToastHostContext.Provider>
     </ToastContext.Provider>
   );
+}
+
+/**
+ * Renders the live toasts. Rendered by the provider at the page root, and by <Sheet> inside its
+ * dialog: top-layer modals paint above and inert-ify everything outside them, so a toast raised
+ * while a sheet is open must live inside that dialog to be seen and dismissed.
+ */
+export function ToastRegion({ placement = "bottom" }: { placement?: "top" | "bottom" }) {
+  const host = useContext(ToastHostContext);
+  if (!host) return null;
+  return (
+    <div
+      role="region"
+      aria-label="Notifications"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 z-50 mx-auto flex max-w-md flex-col gap-2 px-4",
+        placement === "top"
+          ? "top-0 pt-[max(1rem,env(safe-area-inset-top))]"
+          : "bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]",
+      )}
+    >
+      {host.items.map((item) => (
+        <ToastCard key={item.id} item={item} onDismiss={host.dismiss} />
+      ))}
+    </div>
+  );
+}
+
+/** Called by modal components while open so the root region steps aside. */
+export function useToastModal(open: boolean): void {
+  const host = useContext(ToastHostContext);
+  const acquire = host?.acquireModal;
+  useEffect(() => {
+    if (!open || !acquire) return;
+    return acquire();
+  }, [open, acquire]);
 }
 
 export function useToast(): ToastApi {

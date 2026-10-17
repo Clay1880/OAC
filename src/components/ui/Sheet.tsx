@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { ToastRegion, useToastModal } from "./Toast";
 
 export type SheetProps = {
   open: boolean;
@@ -31,6 +32,8 @@ export function Sheet({
   const titleId = useId();
   const descId = useId();
 
+  useToastModal(open);
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -44,6 +47,11 @@ export function Sheet({
       className={cn("sheet", className)}
       aria-labelledby={titleId}
       aria-describedby={description ? descId : undefined}
+      // Esc: let the parent decide. Keep the dialog open until `open` flips so state never desyncs.
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
       // `close` also fires when we call dialog.close() ourselves; only report user-initiated closes.
       onClose={() => {
         if (open) onClose();
@@ -85,6 +93,8 @@ export function Sheet({
               {footer}
             </footer>
           )}
+          {/* Inside the dialog so toasts stay visible and interactive above the modal. */}
+          <ToastRegion placement="top" />
         </>
       )}
     </dialog>

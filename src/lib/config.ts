@@ -9,8 +9,19 @@ export const NO_SHOW_HOLD_MINUTES = 15;
 export const ORDER_CUTOFF_MINUTES = 5;
 
 /**
- * Email domain students must sign in with (e.g. `college.edu`).
+ * Email domain students must sign in with (e.g. `college.edu`), or undefined when unset.
  * Referenced statically so Next.js can inline it into the client bundle.
  */
-export const COLLEGE_EMAIL_DOMAIN: string =
-  process.env.NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN ?? "";
+export const COLLEGE_EMAIL_DOMAIN: string | undefined =
+  process.env.NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN?.trim().replace(/^@/, "").toLowerCase() ||
+  undefined;
+
+/** Use where the domain is enforced: fails loudly instead of letting every address through. */
+export function requireCollegeEmailDomain(): string {
+  if (!COLLEGE_EMAIL_DOMAIN) {
+    throw new Error(
+      "NEXT_PUBLIC_COLLEGE_EMAIL_DOMAIN is not set. Add it to .env.local (see .env.example).",
+    );
+  }
+  return COLLEGE_EMAIL_DOMAIN;
+}

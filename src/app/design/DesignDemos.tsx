@@ -38,7 +38,21 @@ export function DesignDemos() {
           </Button>
         }
       >
-        <p className="text-ink-soft">Sheet body scrolls when the content is long.</p>
+        <div className="space-y-3">
+          <p className="text-ink-soft">Sheet body scrolls when the content is long.</p>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast({
+                title: "Could not place order",
+                description: "That slot just filled up. Pick another.",
+                tone: "error",
+              })
+            }
+          >
+            Raise error toast
+          </Button>
+        </div>
       </Sheet>
     </div>
   );
