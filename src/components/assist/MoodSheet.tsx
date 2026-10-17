@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
@@ -40,6 +40,11 @@ export function MoodSheet({ open, onClose, canteenId }: { open: boolean; onClose
   const [result, setResult] = useState<Suggestion | null>(null);
   // A slow answer must not overwrite a newer one.
   const latest = useRef(0);
+  // A request that fails after the sheet closed has nobody to tell.
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const toggleMood = (id: MoodId) =>
     setMoods((current) => (current.includes(id) ? current.filter((m) => m !== id) : [...current, id]));
@@ -58,7 +63,7 @@ export function MoodSheet({ open, onClose, canteenId }: { open: boolean; onClose
       if (ticket !== latest.current) return;
       setResult({ headline: body.headline, picks: body.picks.slice(0, 3) });
     } catch {
-      if (ticket !== latest.current) return;
+      if (ticket !== latest.current || !openRef.current) return;
       toast({ title: "Check your connection and try again.", tone: "error" });
     } finally {
       if (ticket === latest.current) setLoading(false);
@@ -108,8 +113,10 @@ export function MoodSheet({ open, onClose, canteenId }: { open: boolean; onClose
         />
       </label>
 
+      {/* One persistent live region, so a screen reader announces the loading text and then the result. */}
+      <div aria-live="polite">
       {loading ? (
-        <div role="status" aria-busy="true" className="mt-5 space-y-3">
+        <div className="mt-5 space-y-3">
           <span className="sr-only">Finding something for you</span>
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3 rounded-card bg-sunken p-3">
@@ -162,6 +169,7 @@ export function MoodSheet({ open, onClose, canteenId }: { open: boolean; onClose
           </section>
         )
       )}
+      </div>
     </Sheet>
   );
 }
