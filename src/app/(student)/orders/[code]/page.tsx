@@ -19,11 +19,19 @@ export default async function OrderPage({ params }: PageProps<"/orders/[code]">)
   const { order_items, slots, ...order } = data;
   const slot = Array.isArray(slots) ? slots[0] : slots;
 
+  // The student's own rating of this order, if any (RLS: own rows only).
+  const { data: feedback } = await supabase
+    .from("order_feedback")
+    .select("rating, comment")
+    .eq("order_id", order.id)
+    .maybeSingle();
+
   return (
     <OrderTracker
       initialOrder={order as Order}
       lines={order_items as OrderLine[]}
       slotStartsAt={slot.starts_at}
+      existingFeedback={feedback}
     />
   );
 }

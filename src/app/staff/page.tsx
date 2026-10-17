@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import { SignOutButton } from "@/components/SignOutButton";
 import { StaffConsole } from "@/components/staff/StaffConsole";
+import { buttonStyles } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { fetchStaffData } from "@/lib/staff/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +22,12 @@ export default async function StaffHome() {
           <BrandMark />
           <h1 className="text-2xl font-bold">Counter</h1>
         </div>
-        <SignOutButton variant="ghost" className="rounded-pill" />
+        <div className="flex items-center gap-1">
+          <Link href="/staff/feedback" className={buttonStyles({ variant: "ghost", className: "rounded-pill" })}>
+            Feedback
+          </Link>
+          <SignOutButton variant="ghost" className="rounded-pill" />
+        </div>
       </header>
       {canteen ? (
         <StaffConsole initial={data} holdMinutes={canteen.no_show_hold_minutes ?? 15} serverNow={now.toISOString()} />

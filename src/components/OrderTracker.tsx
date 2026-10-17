@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { OrderProgressBar } from "@/components/OrderProgressBar";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
@@ -29,10 +30,13 @@ export function OrderTracker({
   initialOrder,
   lines,
   slotStartsAt,
+  existingFeedback = null,
 }: {
   initialOrder: Order;
   lines: OrderLine[];
   slotStartsAt: string;
+  /** The student's rating of this order, when they already gave one. */
+  existingFeedback?: { rating: number; comment: string | null } | null;
 }) {
   const { order, refresh } = useOrderRealtime(initialOrder.id, initialOrder);
   const { toast } = useToast();
@@ -100,6 +104,8 @@ export function OrderTracker({
         </h2>
         <OrderStatusTimeline status={order.status} />
       </section>
+
+      {order.status === "collected" && <FeedbackForm orderId={order.id} existing={existingFeedback} />}
 
       <section aria-labelledby="items-heading">
         <h2 id="items-heading" className="mb-2 text-[1.0625rem] font-bold">
