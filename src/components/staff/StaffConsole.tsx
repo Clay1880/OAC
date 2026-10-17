@@ -142,10 +142,18 @@ export function StaffConsole({
       clearTimeout(pending);
       pending = setTimeout(() => void refetch(), 250);
     };
-    const channel = supabase
-      .channel(`staff-orders-${canteenId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, refetchSoon)
-      .subscribe();
+    // A filtered subscription is checked as the signed-in role, so the session's token must be on the
+    // socket before joining; otherwise Realtime validates the filter as anon and rejects it.
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session) supabase.realtime.setAuth(data.session.access_token);
+      channel = supabase
+        .channel(`staff-orders-${canteenId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `canteen_id=eq.${canteenId}` }, refetchSoon)
+        .subscribe();
+    });
     const poll = setInterval(() => void refetch(), POLL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") void refetch();
@@ -154,9 +162,10 @@ export function StaffConsole({
     window.addEventListener("online", refetchSoon);
 
     return () => {
+      cancelled = true;
       clearTimeout(pending);
       clearInterval(poll);
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", refetchSoon);
     };
