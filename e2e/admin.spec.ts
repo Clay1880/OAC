@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createMenuItem, createSlot, createUser } from "../tests/integration/helpers";
+import { createMenuItem, createSlot, createUser, defaultCanteen, seededCanteen } from "../tests/integration/helpers";
 import { admin, createStaffLogin, signUpStudent, staffSignIn } from "./helpers";
 
 async function signInAdmin(page: Page) {
@@ -42,7 +42,12 @@ test.describe("admin: menu", () => {
   });
 
   test("edits a price", async ({ page }) => {
-    const item = await createMenuItem({ name: `Test Edit ${randomUUID().slice(0, 6)}`, price_paise: 1000 });
+    // The admin console shows the college's first canteen (oac), so the item must live there.
+    const item = await createMenuItem({
+      name: `Test Edit ${randomUUID().slice(0, 6)}`,
+      price_paise: 1000,
+      canteen_id: (await seededCanteen()).id,
+    });
     await signInAdmin(page);
     await page.goto("/admin/menu");
     await page.waitForLoadState("networkidle");
@@ -97,7 +102,7 @@ test.describe("admin: slots", () => {
   });
 
   test("changes a slot's capacity but not below what is booked", async ({ page }) => {
-    const slot = await createSlot(-40, 10); // started 40 minutes ago: listed near the top
+    const slot = await createSlot(-40, 10, (await seededCanteen()).id); // started 40 minutes ago: listed near the top
     await admin.from("slots").update({ booked_count: 6 }).eq("id", slot.id);
     await signInAdmin(page);
     await page.goto("/admin/slots");
@@ -124,6 +129,7 @@ test.describe("admin: defaulters", () => {
     const item = await createMenuItem({ price_paise: 4500 });
     const slot = await createSlot(30, 5);
     const placed = await student.client.rpc("place_order", {
+      p_canteen_id: (await defaultCanteen()).id,
       p_slot_id: slot.id,
       p_items: [{ menu_item_id: item.id, qty: 2 }],
       p_request_id: randomUUID(),
@@ -151,6 +157,7 @@ test.describe("admin: defaulters", () => {
     const { data: after } = await admin.from("profiles").select("is_defaulter").eq("id", student.id).single();
     expect(after?.is_defaulter).toBe(false);
     const again = await student.client.rpc("place_order", {
+      p_canteen_id: (await defaultCanteen()).id,
       p_slot_id: (await createSlot(60, 5)).id,
       p_items: [{ menu_item_id: item.id, qty: 1 }],
       p_request_id: randomUUID(),

@@ -1,7 +1,7 @@
 -- pgTAP tests: schema constraints, RLS, staff_orders_v, college-email guard, canteen tenancy.
 -- Run with `npx supabase test db` (after `npx supabase db reset`, so seed.sql has set the college domain).
 begin;
-select plan(79);
+select plan(83);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (inserted as the superuser, so RLS and grants do not apply)
@@ -415,6 +415,16 @@ select throws_ok(
 -- Structure
 -- ---------------------------------------------------------------------------
 select hasnt_table('public', 'app_settings', 'app_settings is gone: college_domains is the only domain source');
+select ok(not has_column_privilege('authenticated', 'public.slots', 'canteen_id', 'UPDATE'),
+  'authenticated cannot update slots.canteen_id (a slot never changes canteen)');
+select ok(not has_column_privilege('authenticated', 'public.menu_items', 'canteen_id', 'UPDATE'),
+  'authenticated cannot update menu_items.canteen_id (an item never changes canteen)');
+select ok((select 'security_barrier=true' = any(coalesce(c.reloptions, '{}')) from pg_class c
+            where c.oid = 'public.staff_orders_v'::regclass),
+  'staff_orders_v is a security barrier view');
+select ok((select 'security_barrier=true' = any(coalesce(c.reloptions, '{}')) from pg_class c
+            where c.oid = 'public.staff_feedback_v'::regclass),
+  'staff_feedback_v is a security barrier view');
 select has_index('public', 'orders', 'orders_slot_id_status_idx', 'index on orders(slot_id, status)');
 select has_index('public', 'orders', 'orders_student_id_created_at_idx', 'index on orders(student_id, created_at desc)');
 select has_index('public', 'orders', 'orders_status_created_at_idx', 'index on orders(status, created_at)');

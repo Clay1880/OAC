@@ -42,3 +42,21 @@ $$;
 
 revoke all on function public.has_canteen_role(uuid, public.canteen_role) from public, anon;
 grant execute on function public.has_canteen_role(uuid, public.canteen_role) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- A menu item or slot never changes canteen. Row policies alone let an owner of two canteens
+-- move rows between them (USING and WITH CHECK both pass), so take away the column itself.
+-- The admin console edits menu items with exactly these columns; insert and delete stay.
+-- ---------------------------------------------------------------------------
+revoke update (canteen_id) on public.slots from authenticated;
+
+revoke update on public.menu_items from authenticated;
+grant update (name, description, price_paise, category, is_available, sort, tags, meal_moments)
+  on public.menu_items to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- The definer views filter on has_canteen_role(); as security barriers, no caller-supplied
+-- function or operator in a WHERE clause runs before that filter on rows it would hide.
+-- ---------------------------------------------------------------------------
+alter view public.staff_orders_v set (security_barrier = true);
+alter view public.staff_feedback_v set (security_barrier = true);

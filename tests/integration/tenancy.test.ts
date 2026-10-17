@@ -290,3 +290,75 @@ describe("slot administration across canteens", () => {
     expect(data).toEqual([{ id: slotB.id, capacity: 10 }]);
   });
 });
+
+describe("rows stay in their canteen", () => {
+  /** An owner of two canteens of the same college, with an item and a slot in the first. */
+  async function ownerOfTwo() {
+    const first = await createCanteen();
+    const second = await createCanteen();
+    const owner = await createUser("staff", { canteenId: first.id, canteenRole: "owner" });
+    const { error } = await admin
+      .from("canteen_members")
+      .insert({ user_id: owner.id, canteen_id: second.id, role: "owner" });
+    expect(error).toBeNull();
+    const item = await createMenuItem({ canteen_id: first.id });
+    const slot = await createSlot(60, 5, first.id);
+    return { first, second, owner, item, slot };
+  }
+
+  it("an owner of two canteens cannot move a menu item to the other canteen (42501)", async () => {
+    const { first, second, owner, item } = await ownerOfTwo();
+
+    const { error } = await owner.client.from("menu_items").update({ canteen_id: second.id }).eq("id", item.id);
+
+    expect(error?.code).toBe("42501");
+    const { data } = await admin.from("menu_items").select("canteen_id").eq("id", item.id).single();
+    expect(data?.canteen_id).toBe(first.id);
+  });
+
+  it("an owner of two canteens cannot move a slot to the other canteen (42501)", async () => {
+    const { first, second, owner, slot } = await ownerOfTwo();
+
+    const { error } = await owner.client.from("slots").update({ canteen_id: second.id }).eq("id", slot.id);
+
+    expect(error?.code).toBe("42501");
+    const { data } = await admin.from("slots").select("canteen_id").eq("id", slot.id).single();
+    expect(data?.canteen_id).toBe(first.id);
+  });
+
+  it("the owner still edits every menu field the admin console saves, and toggles sold out", async () => {
+    const { owner, item } = await ownerOfTwo();
+
+    const edited = await owner.client
+      .from("menu_items")
+      .update({
+        name: "Renamed",
+        description: "Now with chutney",
+        category: "Snacks",
+        price_paise: 1250,
+        sort: 7,
+        tags: ["veg", "hot"],
+        meal_moments: ["snack"],
+      })
+      .eq("id", item.id);
+    const toggled = await owner.client.from("menu_items").update({ is_available: false }).eq("id", item.id);
+
+    expect(edited.error).toBeNull();
+    expect(toggled.error).toBeNull();
+    const { data } = await admin
+      .from("menu_items")
+      .select("name, description, category, price_paise, sort, tags, meal_moments, is_available")
+      .eq("id", item.id)
+      .single();
+    expect(data).toEqual({
+      name: "Renamed",
+      description: "Now with chutney",
+      category: "Snacks",
+      price_paise: 1250,
+      sort: 7,
+      tags: ["veg", "hot"],
+      meal_moments: ["snack"],
+      is_available: false,
+    });
+  });
+});
