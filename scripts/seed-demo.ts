@@ -11,12 +11,12 @@
  * Sign-in:  student at /demo-login, staff at /staff-login, admin at /staff-login.
  *
  * Against a HOSTED Supabase project it refuses to use the default password (published in this public
- * repository). Give it a private one for that run and it skips the admin account unless you ask:
+ * repository). Put the project's URL, its service_role key and a private DEMO_PASSWORD (6+ characters)
+ * in .env.hosted.local (copy .env.hosted.example) and run:
  *
- *   $env:NEXT_PUBLIC_SUPABASE_URL = "https://<ref>.supabase.co"
- *   $env:SUPABASE_SERVICE_ROLE_KEY = "<service_role key>"
- *   $env:DEMO_PASSWORD = "<a private password, 10+ characters>"
- *   npx tsx scripts/seed-demo.ts            # add $env:DEMO_WITH_ADMIN = "1" to create demo.admin too
+ *   npm run demo:hosted                     # = tsx scripts/seed-demo.ts --env .env.hosted.local
+ *
+ * It skips demo.admin on a hosted project unless that file also sets DEMO_WITH_ADMIN=1.
  */
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { LOCAL_DEMO_PASSWORD, planDemoSeed } from "../src/lib/demoSeedConfig";
@@ -133,9 +133,20 @@ async function openSlots(admin: SupabaseClient, canteenId: string) {
 }
 
 async function main() {
+  // `--env <file>` points at a hosted project's settings (see .env.hosted.example); the default is the local stack.
+  const envIndex = process.argv.indexOf("--env");
+  const envFile = envIndex === -1 ? ".env.local" : process.argv[envIndex + 1];
+  if (!envFile) {
+    console.error("Usage: tsx scripts/seed-demo.ts [--env <file>]");
+    process.exit(1);
+  }
   try {
-    process.loadEnvFile(".env.local");
+    process.loadEnvFile(envFile);
   } catch {
+    if (envIndex !== -1) {
+      console.error(`Could not read ${envFile}. Copy .env.hosted.example to ${envFile} and fill in the values.`);
+      process.exit(1);
+    }
     // No .env.local: rely on the real environment.
   }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

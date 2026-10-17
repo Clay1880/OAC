@@ -34,8 +34,9 @@ describe("planDemoSeed on a hosted project", () => {
     expect(planDemoSeed(HOSTED, { DEMO_PASSWORD: LOCAL_DEMO_PASSWORD }).ok).toBe(false);
   });
 
-  it("refuses a password shorter than 10 characters", () => {
-    expect(planDemoSeed(HOSTED, { DEMO_PASSWORD: "short-pw" }).ok).toBe(false);
+  it("refuses a password shorter than 6 characters, Supabase Auth's own minimum", () => {
+    expect(planDemoSeed(HOSTED, { DEMO_PASSWORD: "12345" }).ok).toBe(false);
+    expect(planDemoSeed(HOSTED, { DEMO_PASSWORD: "123456" }).ok).toBe(true);
   });
 
   it("accepts a private password and leaves the admin account out", () => {

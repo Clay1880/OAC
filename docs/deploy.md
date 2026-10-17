@@ -47,16 +47,13 @@ On Vercel: Project, Settings, Environment Variables. Add each one for Production
 1. **The accounts do not exist.** They are created by a script, so the ones on your laptop are not on the hosted project.
 2. **The feature is off.** `/demo-login` only works when the host has `DEMO_LOGIN=true`. Add it, then redeploy.
 
-Create the accounts on the hosted project from your own machine. The default password is published in this public repository, so the script refuses to use it on a hosted project: pick a private one for the run (PowerShell):
+Create the accounts on the hosted project from your own machine. The default password is published in this public repository, so the script refuses to use it on a hosted project. Copy `.env.hosted.example` to `.env.hosted.local` (git-ignored), fill in the project URL, the `service_role` key and a private `DEMO_PASSWORD` of at least 6 characters, then run:
 
-```powershell
-$env:NEXT_PUBLIC_SUPABASE_URL  = "https://<ref>.supabase.co"
-$env:SUPABASE_SERVICE_ROLE_KEY = "<service_role key>"
-$env:DEMO_PASSWORD             = "<a private password, 10+ characters>"
-npx tsx scripts/seed-demo.ts
+```bash
+npm run demo:hosted
 ```
 
-This creates `demo.student` (sign in at `/demo-login`) and `demo.staff` (sign in at `/staff-login`) with that password, and opens pickup slots for the rest of today, so run it again before each demo. It skips `demo.admin` unless you also set `$env:DEMO_WITH_ADMIN = "1"`. The menu must exist first (step 3 above).
+This creates `demo.student` (sign in at `/demo-login`) and `demo.staff` (sign in at `/staff-login`) with that password, and opens pickup slots for the rest of today, so run it again before each demo. It skips `demo.admin` unless the file also sets `DEMO_WITH_ADMIN=1`. The menu must exist first (step 3 above).
 
 Anyone who knows the password can use these accounts, and the staff account can see students' names and phone numbers. Share the password only with the people at the demo, and delete the accounts afterwards (Supabase dashboard, Authentication, Users), or turn `DEMO_LOGIN` off.
 

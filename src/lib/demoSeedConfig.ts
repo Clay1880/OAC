@@ -10,7 +10,8 @@
 /** The password used on a local stack. Published in the repository: never use it on a hosted project. */
 export const LOCAL_DEMO_PASSWORD = "oac-demo-123";
 
-const MIN_REMOTE_PASSWORD_LENGTH = 10;
+/** Supabase Auth's own default minimum. Longer is better: the demo staff account can see student phone numbers. */
+const MIN_REMOTE_PASSWORD_LENGTH = 6;
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]);
 
 export type DemoSeedPlan = { remote: boolean; password: string; withAdmin: boolean };
@@ -37,8 +38,8 @@ export function planDemoSeed(
       ok: false,
       error:
         `This is a hosted Supabase project (${host}). The default demo password is published in the public repository, ` +
-        `so it is not allowed here. Set a private DEMO_PASSWORD of at least ${MIN_REMOTE_PASSWORD_LENGTH} characters ` +
-        "for this run, for example in PowerShell: $env:DEMO_PASSWORD = '<something only you know>'.",
+        `so it is not allowed here. Set a private DEMO_PASSWORD of at least ${MIN_REMOTE_PASSWORD_LENGTH} characters: ` +
+        "put it in .env.hosted.local (see .env.hosted.example) and run `npm run demo:hosted`.",
     };
   }
   return { ok: true, plan: { remote: true, password: chosen, withAdmin: env.DEMO_WITH_ADMIN === "1" } };

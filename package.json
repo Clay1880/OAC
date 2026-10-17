@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "next typegen && tsc --noEmit",
-    "demo:reset": "supabase db reset && tsx scripts/seed-demo.ts"
+    "demo:reset": "supabase db reset && tsx scripts/seed-demo.ts",
+    "demo:hosted": "tsx scripts/seed-demo.ts --env .env.hosted.local"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
