@@ -98,3 +98,22 @@ export async function staffSignIn(page: Page, loginId: string, password: string)
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
+
+/** Places a one-item order through the real UI and returns its code, id and the student. */
+export async function placeTestOrder(page: Page, opts: { itemName?: string; pricePaise?: number } = {}) {
+  const { createMenuItem, createSlot } = await import("../tests/integration/helpers");
+  const item = await createMenuItem({ name: opts.itemName ?? `Test Item ${randomUUID().slice(0, 6)}`, price_paise: opts.pricePaise ?? 4500 });
+  const slot = await createSlot(30, 5);
+  const student = await signUpStudent(page);
+
+  await page.locator(`[data-item-id="${item.id}"]`).getByRole("button", { name: `Add ${item.name}` }).click();
+  await page.getByRole("button", { name: /View order/ }).click();
+  await page.getByRole("link", { name: "Choose pickup time" }).click();
+  await page.locator(`[data-slot-id="${slot.id}"]`).click();
+  await page.getByRole("button", { name: /Place order/ }).click();
+  await expect(page).toHaveURL(/\/orders\/OAC-/);
+
+  const code = page.url().split("/").pop()!;
+  const { data } = await admin.from("orders").select("id").eq("code", code).single();
+  return { code, orderId: data!.id as string, item, slot, student };
+}
