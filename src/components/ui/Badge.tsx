@@ -1,14 +1,9 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-/** Mirrors the `order_status` enum in the database. */
-export type OrderStatus =
-  | "placed"
-  | "accepted"
-  | "ready"
-  | "collected"
-  | "cancelled"
-  | "no_show";
+import type { OrderStatus } from "@/lib/orders/types";
+
+export type { OrderStatus };
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   placed: "Placed",
