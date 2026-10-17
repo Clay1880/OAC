@@ -15,7 +15,7 @@ The host has no Supabase settings. They live in your local `.env.local`, which i
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page, `service_role` key. Secret: never give it a `NEXT_PUBLIC_` prefix | yes |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `npx web-push generate-vapid-keys`; subject like `mailto:canteen@college.edu` | for "order ready" notifications; skipped if unset |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Google AI Studio; model defaults to `gemini-flash-latest` | optional; without a key the assistant uses its built-in rules |
-| `DEMO_LOGIN` | Do **not** set in production | no |
+| `DEMO_LOGIN` | Set to `true` only to enable the demo sign-in at `/demo-login` for a presentation (see "Demo accounts" below). Leave unset for a real launch | no |
 
 On Vercel: Project, Settings, Environment Variables. Add each one for Production (and Preview if you use it), with no quotes and no trailing spaces, then Deployments, Redeploy.
 
@@ -39,6 +39,26 @@ On Vercel: Project, Settings, Environment Variables. Add each one for Production
    npx tsx scripts/create-admin.ts <login-id> <password> "<full name>"
    ```
    Then sign in at `/staff-login`. Staff accounts are created from the admin console.
+
+## Demo accounts on the hosted site (presentations only)
+
+"That login ID or password is not right" on `/demo-login` has two causes, and you usually need to fix both:
+
+1. **The accounts do not exist.** They are created by a script, so the ones on your laptop are not on the hosted project.
+2. **The feature is off.** `/demo-login` only works when the host has `DEMO_LOGIN=true`. Add it, then redeploy.
+
+Create the accounts on the hosted project from your own machine. The default password is published in this public repository, so the script refuses to use it on a hosted project: pick a private one for the run (PowerShell):
+
+```powershell
+$env:NEXT_PUBLIC_SUPABASE_URL  = "https://<ref>.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY = "<service_role key>"
+$env:DEMO_PASSWORD             = "<a private password, 10+ characters>"
+npx tsx scripts/seed-demo.ts
+```
+
+This creates `demo.student` (sign in at `/demo-login`) and `demo.staff` (sign in at `/staff-login`) with that password, and opens pickup slots for the rest of today, so run it again before each demo. It skips `demo.admin` unless you also set `$env:DEMO_WITH_ADMIN = "1"`. The menu must exist first (step 3 above).
+
+Anyone who knows the password can use these accounts, and the staff account can see students' names and phone numbers. Share the password only with the people at the demo, and delete the accounts afterwards (Supabase dashboard, Authentication, Users), or turn `DEMO_LOGIN` off.
 
 ## Other errors you may meet
 

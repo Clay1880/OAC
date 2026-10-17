@@ -5,14 +5,24 @@
  *
  * Creates (or resets) a demo student, staff and admin account with a known password, and opens
  * pickup slots (every 5 minutes) for the rest of today, so the whole flow can be shown without the OTP email.
- * Safe to run repeatedly; run it again right before presenting to get fresh slots. Local use only:
- * it uses the service-role key, and the demo student sign-in is off unless DEMO_LOGIN=true.
+ * Safe to run repeatedly; run it again right before presenting to get fresh slots. It uses the
+ * service-role key, and the demo student sign-in is off unless the app has DEMO_LOGIN=true.
  *
  * Sign-in:  student at /demo-login, staff at /staff-login, admin at /staff-login.
+ *
+ * Against a HOSTED Supabase project it refuses to use the default password (published in this public
+ * repository). Give it a private one for that run and it skips the admin account unless you ask:
+ *
+ *   $env:NEXT_PUBLIC_SUPABASE_URL = "https://<ref>.supabase.co"
+ *   $env:SUPABASE_SERVICE_ROLE_KEY = "<service_role key>"
+ *   $env:DEMO_PASSWORD = "<a private password, 10+ characters>"
+ *   npx tsx scripts/seed-demo.ts            # add $env:DEMO_WITH_ADMIN = "1" to create demo.admin too
  */
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { LOCAL_DEMO_PASSWORD, planDemoSeed } from "../src/lib/demoSeedConfig";
 
-const PASSWORD = "oac-demo-123";
+/** Set in main() once we know whether this is a local stack or a hosted project. */
+let password = LOCAL_DEMO_PASSWORD;
 const SLOT_CAPACITY = 10;
 const SLOT_STEP_MIN = 5;
 const MIN_LEAD_MIN = 15;
@@ -66,7 +76,7 @@ async function upsertAccount(admin: SupabaseClient, account: Account, tenant: Te
   const email = `${account.loginId}@${account.domain}`;
   const created = await admin.auth.admin.createUser({
     email,
-    password: PASSWORD,
+    password,
     email_confirm: true,
     app_metadata: { provisioned: true }, // lets it past the college-email guard
   });
@@ -75,7 +85,7 @@ async function upsertAccount(admin: SupabaseClient, account: Account, tenant: Te
     const existing = await findUserByEmail(admin, email);
     if (!existing) throw created.error ?? new Error(`Could not create ${email}`);
     const updated = await admin.auth.admin.updateUserById(existing.id, {
-      password: PASSWORD,
+      password,
       email_confirm: true,
       app_metadata: { ...existing.app_metadata, provisioned: true },
     });
@@ -134,17 +144,35 @@ async function main() {
     console.error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set (environment or .env.local).");
     process.exit(1);
   }
+  const decision = planDemoSeed(url, {
+    DEMO_PASSWORD: process.env.DEMO_PASSWORD,
+    DEMO_WITH_ADMIN: process.env.DEMO_WITH_ADMIN,
+  });
+  if (!decision.ok) {
+    console.error(decision.error);
+    process.exit(1);
+  }
+  const { plan } = decision;
+  password = plan.password;
+  const accounts = ACCOUNTS.filter((a) => a.role !== "admin" || plan.withAdmin);
+
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
   const tenant = await findTenant(admin);
-  for (const account of ACCOUNTS) await upsertAccount(admin, account, tenant);
+  for (const account of accounts) await upsertAccount(admin, account, tenant);
   const slots = await openSlots(admin, tenant.canteenId);
 
-  console.log("Demo accounts ready (password for all: " + PASSWORD + ")");
+  // A private password is never echoed; the default one is public anyway.
+  console.log(plan.remote ? "Demo accounts ready (password: the DEMO_PASSWORD you set)" : `Demo accounts ready (password for all: ${password})`);
   console.log("  Student  /demo-login   ID: demo.student");
   console.log("  Staff    /staff-login  ID: demo.staff");
-  console.log("  Admin    /staff-login  ID: demo.admin");
+  if (plan.withAdmin) console.log("  Admin    /staff-login  ID: demo.admin");
   console.log(slots === 0 ? "No slots added: it is too late in the day. Add some in the admin console." : `Slots open for the rest of today: ${slots}`);
+  if (plan.remote) {
+    console.log("");
+    console.log("Also set DEMO_LOGIN=true on your host and redeploy, or /demo-login will keep saying the ID or password is wrong.");
+    console.log("Anyone who has the password can use these accounts; delete them from Supabase (Authentication, Users) after the demo.");
+  }
 }
 
 main().catch((err: unknown) => {
