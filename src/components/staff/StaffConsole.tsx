@@ -56,11 +56,13 @@ const useOnline = () =>
 
 export function StaffConsole({
   initial,
+  canteenId,
   holdMinutes,
   serverNow,
 }: {
   /** Null when the first load failed; the console keeps retrying. */
   initial: Data | null;
+  canteenId: string;
   holdMinutes: number;
   serverNow: string;
 }) {
@@ -120,7 +122,7 @@ export function StaffConsole({
   // --- Data: Realtime pushes, a 15 s poll and foreground/online refetches all call refetch. ----
   const known = useRef(new Set((initial?.orders ?? []).map((o) => o.id)));
   const refetch = useCallback(async () => {
-    const next = await fetchStaffData(createClient());
+    const next = await fetchStaffData(createClient(), canteenId);
     if (!next) {
       setLoadFailed(true);
       return;
@@ -130,7 +132,7 @@ export function StaffConsole({
     next.orders.forEach((o) => known.current.add(o.id));
     setData(next);
     if (fresh.length > 0) alertNewOrders(fresh.map((o) => o.code));
-  }, [alertNewOrders]);
+  }, [alertNewOrders, canteenId]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -141,7 +143,7 @@ export function StaffConsole({
       pending = setTimeout(() => void refetch(), 250);
     };
     const channel = supabase
-      .channel("staff-orders")
+      .channel(`staff-orders-${canteenId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, refetchSoon)
       .subscribe();
     const poll = setInterval(() => void refetch(), POLL_MS);
@@ -158,7 +160,7 @@ export function StaffConsole({
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", refetchSoon);
     };
-  }, [refetch]);
+  }, [refetch, canteenId]);
 
   // --- Actions: optimistic, rolled back if the server says no or the network is gone. ----------
   async function act(order: StaffOrder, action: StaffAction) {

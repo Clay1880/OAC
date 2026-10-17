@@ -13,7 +13,8 @@ export const metadata = { title: "Counter" };
 export default async function StaffHome() {
   const supabase = await createClient();
   const now = new Date();
-  const [data, canteen] = await Promise.all([fetchStaffData(supabase), consoleCanteen(supabase)]);
+  const canteen = await consoleCanteen(supabase);
+  const data = canteen ? await fetchStaffData(supabase, canteen.id) : null;
 
   return (
     <main id="main" className="mx-auto min-h-dvh w-full max-w-xl px-4 pb-16">
@@ -30,7 +31,7 @@ export default async function StaffHome() {
         </div>
       </header>
       {canteen ? (
-        <StaffConsole initial={data} holdMinutes={canteen.no_show_hold_minutes ?? 15} serverNow={now.toISOString()} />
+        <StaffConsole initial={data} canteenId={canteen.id} holdMinutes={canteen.no_show_hold_minutes ?? 15} serverNow={now.toISOString()} />
       ) : (
         <EmptyState title="You are not assigned to a canteen yet" description="Ask your college admin to add you to a canteen." />
       )}

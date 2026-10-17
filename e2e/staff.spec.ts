@@ -1,17 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createMenuItem, createSlot, createUser } from "../tests/integration/helpers";
+import { createCanteen, createMenuItem, createSlot, createUser, seededCanteen } from "../tests/integration/helpers";
 import { admin, createStaffLogin, staffSignIn } from "./helpers";
 
 type Slot = { id: string };
 type Item = { id: string; name: string };
 
 /** A student (via the database, not the UI) places a one-item order. */
-async function placeOrder(opts: { slot?: Slot; item?: Item; qty?: number } = {}) {
+async function placeOrder(opts: { slot?: Slot; item?: Item; qty?: number; canteenId?: string } = {}) {
+  const canteenId = opts.canteenId ?? (await seededCanteen()).id;
   const student = await createUser();
-  const item = opts.item ?? (await createMenuItem({ name: `Test Item ${randomUUID().slice(0, 6)}` }));
-  const slot = opts.slot ?? (await createSlot(30, 10));
+  const item = opts.item ?? (await createMenuItem({ name: `Test Item ${randomUUID().slice(0, 6)}`, canteen_id: canteenId }));
+  const slot = opts.slot ?? (await createSlot(30, 10, canteenId));
   const { data, error } = await student.client.rpc("place_order", {
+    p_canteen_id: canteenId,
     p_slot_id: slot.id,
     p_items: [{ menu_item_id: item.id, qty: opts.qty ?? 1 }],
     p_request_id: randomUUID(),
@@ -111,8 +113,8 @@ test.describe("staff counter console", () => {
   });
 
   test("a slot group shows a prep summary of what to cook", async ({ page }) => {
-    const item = await createMenuItem({ name: `Test Samosa ${randomUUID().slice(0, 6)}` });
-    const slot = await createSlot(30, 10);
+    const item = await createMenuItem({ name: `Test Samosa ${randomUUID().slice(0, 6)}`, canteen_id: (await seededCanteen()).id });
+    const slot = await createSlot(30, 10, (await seededCanteen()).id);
     const first = await placeOrder({ item, slot, qty: 1 });
     await placeOrder({ item, slot, qty: 2 });
     await signInStaff(page);
@@ -124,7 +126,7 @@ test.describe("staff counter console", () => {
 
   test("Flag no-show is disabled with a countdown until 15 minutes after the slot starts", async ({ page }) => {
     const { order, slot } = await placeOrder();
-    const staff = await createUser("staff");
+    const staff = await createUser("staff", { canteenId: (await seededCanteen()).id });
     await staff.client.rpc("accept_order", { p_order_id: order.id });
     await staff.client.rpc("mark_ready", { p_order_id: order.id });
     await signInStaff(page);
@@ -150,12 +152,31 @@ test.describe("staff counter console", () => {
     await expect(c.getByRole("button", { name: "Accept" })).toBeVisible();
 
     // Someone else accepts it first: this screen is now stale.
-    const other = await createUser("staff");
+    const other = await createUser("staff", { canteenId: (await seededCanteen()).id });
     await other.client.rpc("accept_order", { p_order_id: order.id });
     await c.getByRole("button", { name: "Accept" }).click();
 
     await expect(page.getByText(/already changed that order/)).toBeVisible();
     await expect(c).toHaveAttribute("data-status", "accepted");
+  });
+
+  test("a staff member of two canteens sees only the oldest canteen's orders", async ({ page }) => {
+    const staff = await createStaffLogin();
+    const second = await createCanteen();
+    const { error } = await admin
+      .from("canteen_members")
+      .insert({ user_id: staff.userId, canteen_id: second.id, role: "staff" });
+    expect(error).toBeNull();
+
+    const mine = await placeOrder();
+    const otherItem = await createMenuItem({ canteen_id: second.id, name: `Other Canteen ${randomUUID().slice(0, 6)}` });
+    const theirs = await placeOrder({ item: otherItem, slot: await createSlot(30, 10, second.id), canteenId: second.id });
+
+    await staffSignIn(page, staff.loginId, staff.password);
+    await expect(page).toHaveURL(/\/staff$/);
+
+    await expect(page.locator(`[data-order-code="${mine.order.code}"]:visible`)).toBeVisible();
+    await expect(page.locator(`[data-order-code="${theirs.order.code}"]:visible`)).toHaveCount(0);
   });
 
   test("shows an offline banner and clears it when the connection returns", async ({ page, context }) => {
