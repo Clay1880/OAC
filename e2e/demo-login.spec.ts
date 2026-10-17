@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { seededCollege } from "../tests/integration/helpers";
 import { admin, createStaffLogin } from "./helpers";
 
 // The presentation fallback: a student signs in with an ID and password instead of an emailed code.
@@ -19,6 +20,7 @@ async function createDemoStudent() {
     phone: "9876543210",
     reg_no: `DEMO${randomUUID().slice(0, 8).toUpperCase()}`,
     role: "student",
+    college_id: (await seededCollege()).id,
   });
   if (profileError) throw new Error(`createDemoStudent profile: ${profileError.message}`);
   return { loginId, password };
