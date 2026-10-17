@@ -1,0 +1,75 @@
+-- AI assistant: tags and meal moments for the seeded Open Area Canteen menu on databases that
+-- already have the menu (0010 added the columns; until now only seed.sql filled them, and the seed
+-- never runs on production). Values are copied from seed.sql, which keeps its own updates because
+-- a fresh reset inserts the menu after the migrations; a unit test keeps the two identical.
+-- Idempotent and safe for owners: only oac's items whose tags are still empty are touched, so a
+-- later edit in the admin console is never overwritten.
+update public.menu_items m
+set tags = v.tags::text[], meal_moments = v.meal_moments::text[]
+from (values
+  ('Aloo chat', '{veg,hot,spicy,snack,quick}', '{snack}'),
+  ('Fruit chat', '{veg,cold,light,sweet,snack}', '{snack,lunch}'),
+  ('Fruit Basket', '{veg,cold,light,sweet,snack}', '{breakfast,snack}'),
+  ('Pani Puri', '{veg,spicy,snack,quick}', '{snack,late}'),
+  ('Dhabeli', '{veg,spicy,snack,quick}', '{snack}'),
+  ('Misal', '{veg,hot,spicy,filling,meal}', '{breakfast,lunch}'),
+  ('Bhel', '{veg,spicy,snack,quick}', '{snack}'),
+  ('Veg Patice', '{veg,hot,snack,quick}', '{breakfast,snack}'),
+  ('Chicken Patice', '{non-veg,hot,snack,quick}', '{snack}'),
+  ('Anda Bhurji (2 Eggs)', '{egg,hot,filling,quick}', '{breakfast,lunch}'),
+  ('Bread Omlete', '{egg,hot,quick,filling}', '{breakfast,snack}'),
+  ('Maggi', '{veg,hot,quick,snack}', '{snack,dinner,late}'),
+  ('Veg Maggi', '{veg,hot,quick,snack}', '{snack,dinner,late}'),
+  ('Masala Maggi', '{veg,hot,quick,snack,spicy}', '{snack,dinner,late}'),
+  ('Anda Maggi', '{egg,hot,quick,snack,filling}', '{snack,dinner,late}'),
+  ('Pyaaz Kachouri', '{veg,hot,spicy,snack}', '{breakfast,snack}'),
+  ('Veg Manchurian (Dry)', '{veg,hot,spicy,snack}', '{snack,dinner}'),
+  ('Veg Manchurian (Gravy)', '{veg,hot,spicy,filling,meal}', '{lunch,dinner}'),
+  ('Veg Cutlet', '{veg,hot,snack}', '{snack}'),
+  ('Paneer Pakoda', '{veg,hot,heavy,snack}', '{snack}'),
+  ('Kachori', '{veg,hot,spicy,snack}', '{breakfast,snack}'),
+  ('Dhokla', '{veg,light,quick,snack}', '{breakfast,snack}'),
+  ('Sandwich Dhokla', '{veg,light,quick,snack}', '{breakfast,snack}'),
+  ('Veg Sandwich', '{veg,light,quick,snack}', '{breakfast,snack,lunch}'),
+  ('Chicken Sandwich', '{non-veg,filling,quick,snack}', '{snack,lunch}'),
+  ('Chutney Sandwich', '{veg,light,quick,snack}', '{breakfast,snack}'),
+  ('Cheese Sandwich', '{veg,hot,filling,quick,snack}', '{breakfast,snack}'),
+  ('Cheese Roll', '{veg,hot,filling,snack}', '{snack,dinner}'),
+  ('Chicken Roll', '{non-veg,hot,filling,spicy,snack}', '{snack,dinner}'),
+  ('Veg Roll', '{veg,hot,filling,snack}', '{snack,dinner}'),
+  ('Club Sandwich', '{veg,filling,snack}', '{snack,lunch}'),
+  ('Samosa', '{veg,hot,spicy,quick,snack}', '{breakfast,snack}'),
+  ('Veg Burger', '{veg,hot,filling,snack}', '{snack,lunch,dinner}'),
+  ('Chicken Burger', '{non-veg,hot,heavy,filling,meal}', '{lunch,dinner}'),
+  ('Pasta', '{veg,hot,filling,meal}', '{lunch,dinner}'),
+  ('Veg Triple Rice', '{veg,hot,heavy,filling,meal}', '{lunch,dinner}'),
+  ('Veg Triple Noodle', '{veg,hot,heavy,filling,meal}', '{lunch,dinner}'),
+  ('Idli Sambhar', '{veg,hot,light,quick}', '{breakfast,snack}'),
+  ('Vada Sambhar', '{veg,hot,quick,snack}', '{breakfast,snack}'),
+  ('Medu Vada', '{veg,hot,quick,snack}', '{breakfast,snack}'),
+  ('Sada Dosa', '{veg,hot,light}', '{breakfast,snack,dinner}'),
+  ('Masala Dosa', '{veg,hot,spicy,filling}', '{breakfast,lunch,dinner}'),
+  ('Pav Bhaji', '{veg,hot,spicy,filling,meal}', '{lunch,dinner}'),
+  ('Dahiwada', '{veg,cold,light,snack}', '{snack,lunch}'),
+  ('Potato Wada', '{veg,hot,spicy,quick,snack}', '{breakfast,snack}'),
+  ('Uttapam', '{veg,hot,filling}', '{breakfast,lunch,dinner}'),
+  ('Paneer Parata', '{veg,hot,heavy,filling,meal}', '{breakfast,lunch,dinner}'),
+  ('Aloo Parata', '{veg,hot,filling,meal}', '{breakfast,lunch,dinner}'),
+  ('Gobi Parata', '{veg,hot,filling,meal}', '{breakfast,lunch,dinner}'),
+  ('Pyaz Parata', '{veg,hot,filling,meal}', '{breakfast,lunch,dinner}'),
+  ('Gajar ka Halwa', '{veg,hot,sweet,snack}', '{snack,dinner,late}'),
+  ('Cold Coffee', '{veg,cold,sweet,drink}', '{snack,late}'),
+  ('Tea', '{veg,hot,drink,quick}', '{breakfast,snack,late}'),
+  ('Sp. Tea', '{veg,hot,drink,quick}', '{breakfast,snack,late}'),
+  ('Coffee', '{veg,hot,drink,quick}', '{breakfast,snack,late}'),
+  ('Milk', '{veg,hot,light,drink}', '{breakfast,late}'),
+  ('Cutting Tea (Special)', '{veg,hot,drink,quick}', '{breakfast,snack,late}'),
+  ('Daily Lunch Thali', '{veg,hot,heavy,filling,meal}', '{lunch,dinner}'),
+  ('Sunday Special Thali', '{veg,hot,heavy,filling,meal}', '{lunch,dinner}'),
+  ('Masala Bhindi', '{veg,hot,spicy,meal}', '{lunch,dinner}'),
+  ('Veg Biryani', '{veg,hot,heavy,filling,meal,spicy}', '{lunch,dinner}'),
+  ('Chicken Biryani', '{non-veg,heavy,filling,meal,spicy}', '{lunch,dinner}')
+) as v (name, tags, meal_moments)
+where m.canteen_id = (select id from public.canteens where slug = 'oac')
+  and m.name = v.name
+  and m.tags = '{}';
