@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import { adminCallerId } from "../../src/lib/admin/guard";
 import { generateTemporaryPassword, provisionStaff, resetStaffPassword, setStaffActive } from "../../src/lib/admin/staff";
-import { admin, createMenuItem, createSlot, createUser } from "./helpers";
+import { admin, createMenuItem, createSlot, createUser, defaultCanteen } from "./helpers";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
 const ANON =
@@ -110,7 +110,12 @@ describe("setStaffActive", () => {
     const student = await createUser();
     const item = await createMenuItem();
     const slot = await createSlot(60, 5);
-    const placed = await student.client.rpc("place_order", { p_slot_id: slot.id, p_items: [{ menu_item_id: item.id, qty: 1 }], p_request_id: randomUUID() });
+    const placed = await student.client.rpc("place_order", {
+      p_canteen_id: (await defaultCanteen()).id,
+      p_slot_id: slot.id,
+      p_items: [{ menu_item_id: item.id, qty: 1 }],
+      p_request_id: randomUUID(),
+    });
     const orderId = (placed.data as { id: string }).id;
 
     expect(await setStaffActive(admin, created.userId, false)).toEqual({ ok: true });

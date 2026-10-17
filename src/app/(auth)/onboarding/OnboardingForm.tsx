@@ -48,6 +48,7 @@ export function OnboardingForm() {
         INVALID_NAME: { fullName: "Enter your full name." },
         INVALID_REG_NO: { regNo: "Enter your registration number." },
         PROFILE_EXISTS: { form: "Your details are already saved." },
+        NO_COLLEGE: { form: "Your email domain does not belong to a college on this app." },
         SESSION_EXPIRED: {},
         UNKNOWN: { form: "Something went wrong. Please try again." },
       }[result.error],

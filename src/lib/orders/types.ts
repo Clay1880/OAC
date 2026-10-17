@@ -5,6 +5,7 @@ export type OrderStatus = "placed" | "accepted" | "ready" | "collected" | "cance
 export type Order = {
   id: string;
   code: string;
+  canteen_id: string;
   student_id: string;
   slot_id: string;
   status: OrderStatus;
@@ -18,7 +19,14 @@ export type Order = {
   paid_at: string | null;
 };
 
-const PLACE_ORDER_ERRORS = ["SLOT_FULL", "SLOT_CLOSED", "DEFAULTER", "ITEM_UNAVAILABLE", "EMPTY_ORDER"] as const;
+const PLACE_ORDER_ERRORS = [
+  "SLOT_FULL",
+  "SLOT_CLOSED",
+  "DEFAULTER",
+  "ITEM_UNAVAILABLE",
+  "EMPTY_ORDER",
+  "CANTEEN_UNAVAILABLE",
+] as const;
 
 /** Business-rule rejections `place_order` raises, plus UNKNOWN for anything unexpected. */
 export type PlaceOrderError = (typeof PLACE_ORDER_ERRORS)[number] | "UNKNOWN";

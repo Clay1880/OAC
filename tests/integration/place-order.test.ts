@@ -1,9 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { admin, bookedCount, createMenuItem, createSlot, createUser, orderCount, type TestUser } from "./helpers";
+import {
+  admin,
+  bookedCount,
+  createMenuItem,
+  createSlot,
+  createUser,
+  defaultCanteen,
+  orderCount,
+  type TestUser,
+} from "./helpers";
 
-const place = (user: TestUser, slotId: string, items: object[], requestId = randomUUID()) =>
-  user.client.rpc("place_order", { p_slot_id: slotId, p_items: items, p_request_id: requestId });
+const place = async (user: TestUser, slotId: string, items: object[], requestId = randomUUID()) =>
+  user.client.rpc("place_order", {
+    p_canteen_id: (await defaultCanteen()).id,
+    p_slot_id: slotId,
+    p_items: items,
+    p_request_id: requestId,
+  });
 
 describe("place_order", () => {
   it("places an order and computes total from DB prices", async () => {
@@ -22,7 +36,8 @@ describe("place_order", () => {
     expect(order.total_paise).toBe(2 * 1000 + 550);
     expect(order.status).toBe("placed");
     expect(order.student_id).toBe(student.id);
-    expect(order.code).toMatch(/^OAC-[2-9A-HJ-NP-Z]{5}$/);
+    const canteen = await defaultCanteen();
+    expect(order.code).toMatch(new RegExp(`^${canteen.code_prefix}-[2-9A-HJ-NP-Z]{5}$`));
 
     const { data: lines } = await admin.from("order_items").select("*").eq("order_id", order.id);
     expect(lines).toHaveLength(2);

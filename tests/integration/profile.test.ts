@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { admin, createUser, createUserWithoutProfile } from "./helpers";
+import { createClient } from "@supabase/supabase-js";
+import { admin, createCollege, createUser, createUserWithoutProfile, seededCollege, URL } from "./helpers";
 
 const regNo = () => `R${randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -10,6 +11,32 @@ const complete = (user: { client: { rpc: (fn: string, args: object) => PromiseLi
     p_phone: args.phone ?? "9876543210",
     p_reg_no: args.reg ?? regNo(),
   });
+
+const ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+
+/**
+ * A signed-in, profile-less auth user whose email is on `domain`. The sign-up guard only lets a
+ * non-college domain in on the reserved staff domain (provisioned is set after the insert), so the
+ * user is created there and then moved to `domain`, which the guard allows for a provisioned user.
+ */
+async function userOnDomain(domain: string) {
+  const email = `t-${randomUUID()}@${domain}`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email: `t-${randomUUID()}@staff.oac.local`,
+    password: "test-password-123",
+    email_confirm: true,
+    app_metadata: { provisioned: true },
+  });
+  if (error || !data.user) throw new Error(`createUser: ${error?.message}`);
+  const { error: moveError } = await admin.auth.admin.updateUserById(data.user.id, { email, email_confirm: true });
+  if (moveError) throw new Error(`move email: ${moveError.message}`);
+  const client = createClient(URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { error: signInError } = await client.auth.signInWithPassword({ email, password: "test-password-123" });
+  if (signInError) throw new Error(`signIn: ${signInError.message}`);
+  return { id: data.user.id, client };
+}
 
 describe("complete_profile", () => {
   it("creates a student profile for the caller, normalising the fields", async () => {
@@ -83,6 +110,37 @@ describe("complete_profile", () => {
 
     expect(error).toBeNull();
     expect((data as { phone: string }).phone).toBe("9876543210");
+  });
+
+  it("sets college_id from the email domain", async () => {
+    const user = await createUserWithoutProfile();
+
+    const { data, error } = await complete(user, {});
+
+    expect(error).toBeNull();
+    expect((data as { college_id: string }).college_id).toBe((await seededCollege()).id);
+  });
+
+  it("a user on the second college's domain lands in that college", async () => {
+    const college = await createCollege();
+    const user = await userOnDomain(college.domain);
+
+    const { data, error } = await complete(user, {});
+
+    expect(error).toBeNull();
+    expect((data as { college_id: string }).college_id).toBe(college.id);
+    const { data: stored } = await admin.from("profiles").select("college_id").eq("id", user.id).single();
+    expect(stored?.college_id).toBe(college.id);
+  });
+
+  it("NO_COLLEGE when the email domain matches no college", async () => {
+    const user = await userOnDomain("nowhere.test");
+
+    const { error } = await complete(user, {});
+
+    expect(error?.message).toBe("NO_COLLEGE");
+    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("id", user.id);
+    expect(count).toBe(0);
   });
 
   it("is not callable when signed out", async () => {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { admin, createMenuItem, createSlot, createUser, type TestUser } from "./helpers";
+import { admin, createMenuItem, createSlot, createUser, defaultCanteen, type TestUser } from "./helpers";
 
 type OrderRow = { id: string; status: string; collected_at: string | null; paid_at: string | null; flagged_at: string | null };
 
@@ -8,6 +8,7 @@ async function placeOrder(student: TestUser, slotId?: string) {
   const item = await createMenuItem({ price_paise: 1000 });
   const slot = slotId ? { id: slotId } : await createSlot(60, 5);
   const { data, error } = await student.client.rpc("place_order", {
+    p_canteen_id: (await defaultCanteen()).id,
     p_slot_id: slot.id,
     p_items: [{ menu_item_id: item.id, qty: 1 }],
     p_request_id: randomUUID(),
@@ -176,6 +177,7 @@ describe("no-show and defaulter rules", () => {
     const item = await createMenuItem();
     const next = await createSlot(60, 5);
     const { error } = await student.client.rpc("place_order", {
+      p_canteen_id: (await defaultCanteen()).id,
       p_slot_id: next.id,
       p_items: [{ menu_item_id: item.id, qty: 1 }],
       p_request_id: randomUUID(),

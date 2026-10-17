@@ -83,6 +83,8 @@ export type CompleteProfileError =
   | "INVALID_REG_NO"
   | "REG_NO_TAKEN"
   | "PROFILE_EXISTS"
+  /** The email domain belongs to no college on the platform. */
+  | "NO_COLLEGE"
   /** The account behind this session no longer exists (e.g. the database was reset). */
   | "SESSION_EXPIRED"
   | "UNKNOWN";
@@ -104,7 +106,14 @@ export async function completeProfile(input: {
     await supabase.auth.signOut();
     return { ok: false, error: "SESSION_EXPIRED" };
   }
-  const known = ["INVALID_NAME", "INVALID_PHONE", "INVALID_REG_NO", "REG_NO_TAKEN", "PROFILE_EXISTS"] as const;
+  const known = [
+    "INVALID_NAME",
+    "INVALID_PHONE",
+    "INVALID_REG_NO",
+    "REG_NO_TAKEN",
+    "PROFILE_EXISTS",
+    "NO_COLLEGE",
+  ] as const;
   const match = known.find((code) => code === error.message);
   return { ok: false, error: match ?? "UNKNOWN" };
 }

@@ -24,6 +24,7 @@ const ERROR_COPY = {
   ITEM_UNAVAILABLE: "Something in your order just sold out.",
   EMPTY_ORDER: "Your order is empty.",
   DEFAULTER: "Ordering is paused until you clear your dues at the counter.",
+  CANTEEN_UNAVAILABLE: "This canteen is not taking orders right now.",
   UNKNOWN: "We could not place your order. Check your connection and try again.",
 } as const;
 
