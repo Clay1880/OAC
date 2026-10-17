@@ -1,0 +1,9 @@
+<!-- Used for both the sign-in and the first-time sign-up email. Paste into the hosted project's
+     Authentication > Email Templates (Magic Link and Confirm signup) as well: the code is what students type. -->
+<div style="font-family: Georgia, serif; max-width: 420px; margin: 0 auto; padding: 24px; color: #1a1511;">
+  <p style="font-size: 14px; letter-spacing: 0.08em; color: #c4261d; margin: 0 0 8px;"><strong>OAC</strong></p>
+  <h2 style="margin: 0 0 12px;">Your sign-in code</h2>
+  <p style="margin: 0 0 16px;">Enter this code in the OAC app to sign in:</p>
+  <p style="font-family: 'Courier New', monospace; font-size: 32px; letter-spacing: 0.3em; margin: 0 0 16px;"><strong>{{ .Token }}</strong></p>
+  <p style="margin: 0; font-size: 14px; color: #4a4037;">The code expires in an hour. If you did not ask for it, you can ignore this email.</p>
+</div>

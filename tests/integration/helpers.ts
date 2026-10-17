@@ -87,3 +87,19 @@ export async function orderCount(slotId: string): Promise<number> {
   if (error) throw new Error(error.message);
   return count ?? 0;
 }
+
+/** A signed-in client for an auth user that has no profile yet (a student mid-onboarding). */
+export async function createUserWithoutProfile(): Promise<TestUser> {
+  const email = `t-${randomUUID()}@staff.oac.local`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: PASSWORD,
+    email_confirm: true,
+    app_metadata: { provisioned: true },
+  });
+  if (error || !data.user) throw new Error(`createUser: ${error?.message}`);
+  const client = createClient(URL, ANON_KEY, clientOptions);
+  const { error: signInError } = await client.auth.signInWithPassword({ email, password: PASSWORD });
+  if (signInError) throw new Error(`signIn: ${signInError.message}`);
+  return { id: data.user.id, client };
+}
