@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Stepper } from "@/components/Stepper";
 import { useCart } from "@/components/CartProvider";
 import { formatPaise } from "@/lib/format";
@@ -77,6 +78,12 @@ export function MenuList({ items }: { items: MenuItem[] }) {
           </ul>
         </section>
       ))}
+      <p className="pb-2 text-center text-xs text-ink-faint">
+        Dish photos from Wikimedia Commons ·{" "}
+        <Link href="/credits" className="font-semibold underline">
+          Photo credits
+        </Link>
+      </p>
     </div>
   );
 }
