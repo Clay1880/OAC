@@ -16,6 +16,6 @@ export function HoldTimer({
       Held for pickup. No-show can be flagged in <span className="num font-semibold text-ink">{formatCountdown(remaining)}</span>
     </p>
   ) : (
-    <p className="text-sm font-semibold text-chili-deep">Hold is over. Not collected? Flag as no-show.</p>
+    <p className="text-sm font-semibold text-danger-deep">Hold is over. Not collected? Flag as no-show.</p>
   );
 }

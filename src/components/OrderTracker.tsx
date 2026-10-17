@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { OrderProgressBar } from "@/components/OrderProgressBar";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { PushOptIn } from "@/components/PushOptIn";
 import { formatPaise, formatSlotTime } from "@/lib/format";
@@ -73,13 +74,14 @@ export function OrderTracker({
           <p className="text-sm text-ink-soft">Order ID</p>
           <Badge status={order.status} />
         </div>
-        <h1 className="order-code mt-1 break-all text-5xl leading-none">{order.code}</h1>
+        <h1 className="order-code mt-1 break-all text-4xl leading-none text-brand">{order.code}</h1>
         <p
           role="status"
           className={ready ? "mt-4 text-xl font-semibold text-status-ready-ink" : "mt-4 text-lg text-ink-soft"}
         >
           {HEADLINE[order.status]}
         </p>
+        <OrderProgressBar status={order.status} className="mt-4" />
         {showCounterPayment && (
           <p className="mt-1 text-sm text-ink-soft">Pay at the counter when you collect.</p>
         )}
@@ -93,17 +95,17 @@ export function OrderTracker({
       )}
 
       <section aria-labelledby="progress-heading">
-        <h2 id="progress-heading" className="mb-1 text-2xl font-semibold">
+        <h2 id="progress-heading" className="mb-2 text-[1.0625rem] font-bold">
           Progress
         </h2>
         <OrderStatusTimeline status={order.status} />
       </section>
 
       <section aria-labelledby="items-heading">
-        <h2 id="items-heading" className="mb-2 text-2xl font-semibold">
+        <h2 id="items-heading" className="mb-2 text-[1.0625rem] font-bold">
           Items
         </h2>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line rounded-card border border-line bg-surface px-4 shadow-edge">
           {lines.map((line) => (
             <li key={line.name} className="flex items-baseline justify-between gap-3 py-2.5">
               <span>

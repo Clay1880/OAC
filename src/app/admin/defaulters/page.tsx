@@ -14,7 +14,7 @@ export default async function DefaultersPage() {
 
   return (
     <>
-      <h1 className="mb-2 text-4xl font-semibold">Defaulters</h1>
+      <h1 className="mb-2 text-2xl font-bold">Defaulters</h1>
       <p className="mb-6 text-ink-soft">Students who did not collect an order. They cannot order again until they pay.</p>
       <DefaultersAdmin defaulters={groupDefaulters((data ?? []) as unknown as UnpaidOrderRow[])} />
     </>

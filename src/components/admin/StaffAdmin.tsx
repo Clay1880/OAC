@@ -83,9 +83,9 @@ export function StaffAdmin({ initialStaff }: { initialStaff: StaffRow[] }) {
         <section
           role="status"
           aria-label="Temporary password"
-          className="rounded-card border-2 border-ink bg-status-placed p-5 text-status-placed-ink"
+          className="rounded-card border border-status-placed-dot bg-status-placed p-5 text-status-placed-ink shadow-edge"
         >
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-xl font-bold">
             {credentials.reason === "created" ? "Login created" : "Password reset"}
           </h2>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
@@ -104,7 +104,7 @@ export function StaffAdmin({ initialStaff }: { initialStaff: StaffRow[] }) {
       )}
 
       <Card>
-        <h2 className="mb-4 text-2xl font-semibold">Add staff</h2>
+        <h2 className="mb-4 text-[1.0625rem] font-bold">Add staff</h2>
         <form onSubmit={create} noValidate className="flex flex-col gap-4">
           <Field label="Full name" name="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
           <Field
@@ -127,7 +127,7 @@ export function StaffAdmin({ initialStaff }: { initialStaff: StaffRow[] }) {
       {initialStaff.length === 0 ? (
         <EmptyState title="No staff yet" description="Add the first counter login above." />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line rounded-card border border-line bg-surface px-4 shadow-edge">
           {initialStaff.map((row) => (
             <li key={row.id} data-staff-id={row.id} data-login-id={row.loginId} className="flex flex-col gap-3 py-4">
               <div>

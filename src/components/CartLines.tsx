@@ -25,12 +25,12 @@ export function CartLines({ menu, flaggedIds = [] }: { menu: MenuItem[]; flagged
             <li
               key={line.itemId}
               data-flagged={flagged || undefined}
-              className={cn("flex items-center justify-between gap-3 py-3", flagged && "-mx-2 rounded-chip bg-chili-soft px-2")}
+              className={cn("flex items-center justify-between gap-3 py-3", flagged && "-mx-2 rounded-chip bg-danger-soft px-2")}
             >
               <div className="min-w-0">
                 <p className="font-semibold">{item?.name ?? "No longer on the menu"}</p>
                 {flagged ? (
-                  <p role="status" className="text-sm font-medium text-chili-deep">
+                  <p role="status" className="text-sm font-medium text-danger-deep">
                     Sold out right now.{" "}
                     <button type="button" onClick={() => set(line.itemId, 0)} className="underline underline-offset-2">
                       Remove from order
@@ -52,7 +52,7 @@ export function CartLines({ menu, flaggedIds = [] }: { menu: MenuItem[]; flagged
           );
         })}
       </ul>
-      <div className="mt-4 flex items-baseline justify-between border-t-2 border-ink pt-4">
+      <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
         <span className="font-display text-xl font-semibold">Total</span>
         <span className="num text-2xl font-semibold">{formatPaise(cartTotalPaise(cart, menu.filter((m) => m.is_available)))}</span>
       </div>

@@ -41,7 +41,7 @@ export function OrderCard({
       aria-label={`Order ${order.code}`}
       className={cn(
         "flex flex-col gap-3 rounded-card border bg-surface p-4 shadow-edge",
-        highlighted ? "border-chili ring-2 ring-chili" : "border-line",
+        highlighted ? "border-brand ring-2 ring-brand" : "border-line",
       )}
     >
       <header className="flex items-start justify-between gap-3">

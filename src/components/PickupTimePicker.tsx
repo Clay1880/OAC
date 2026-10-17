@@ -47,7 +47,7 @@ export function PickupTimePicker({
 
   if (!earliest) {
     return (
-      <p role="alert" className="rounded-chip border-2 border-chili bg-chili-soft px-4 py-3 text-chili-deep">
+      <p role="alert" className="rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 text-danger-deep">
         No pickup times are left today.
       </p>
     );
@@ -77,7 +77,7 @@ export function PickupTimePicker({
     }
   }
 
-  const edge = error ? "border-chili" : "border-line-strong";
+  const edge = error ? "border-danger" : "border-line-strong";
 
   return (
     <div className="flex flex-col gap-3">
@@ -124,7 +124,7 @@ export function PickupTimePicker({
       </fieldset>
       <div id={messageId}>
         {error ? (
-          <p role="alert" className="text-sm font-medium text-chili-deep">
+          <p role="alert" className="text-sm font-medium text-danger-deep">
             {error}
           </p>
         ) : (

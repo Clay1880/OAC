@@ -37,15 +37,15 @@ export function OrderStatusTimeline({ status }: { status: OrderStatus }) {
             {i < steps.length - 1 && (
               <span
                 aria-hidden="true"
-                className={cn("absolute left-[0.6875rem] top-8 h-full w-0.5", done ? "bg-ink" : "bg-line-strong/40")}
+                className={cn("absolute left-[0.6875rem] top-8 h-full w-0.5", done ? "bg-brand" : "bg-line-strong/40")}
               />
             )}
             <span
               aria-hidden="true"
               className={cn(
                 "relative flex size-6 shrink-0 items-center justify-center rounded-full border-2",
-                done && "border-ink bg-ink text-paper",
-                isCurrent && !done && (ended ? "border-chili bg-chili text-on-chili" : "border-chili bg-chili-soft"),
+                done && "border-brand bg-brand text-on-brand",
+                isCurrent && !done && (ended ? "border-danger bg-danger text-on-danger" : "border-brand bg-brand-soft"),
                 !done && !isCurrent && "border-line-strong/60 bg-surface",
               )}
             >
@@ -54,7 +54,7 @@ export function OrderStatusTimeline({ status }: { status: OrderStatus }) {
                   <path d="M5 12l5 5 9-10" />
                 </svg>
               )}
-              {isCurrent && !done && !ended && <span className="size-2 rounded-full bg-chili motion-safe:animate-pulse" />}
+              {isCurrent && !done && !ended && <span className="size-2 rounded-full bg-brand motion-safe:animate-pulse" />}
             </span>
             <span
               className={cn(

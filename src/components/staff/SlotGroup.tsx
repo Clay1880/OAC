@@ -19,9 +19,9 @@ export function SlotGroup({
   const headingId = `slot-${slotStart}`;
   return (
     <section aria-labelledby={headingId} data-slot-start={slotStart} className="flex flex-col gap-3">
-      <header className="sticky top-0 z-10 -mx-4 border-b-2 border-ink bg-paper/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 -mx-4 border-b border-line-strong/30 bg-paper/95 px-4 py-3 backdrop-blur">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id={headingId} className="num text-3xl font-semibold">
+          <h2 id={headingId} className="num text-3xl font-bold text-brand">
             {formatSlotTime(slotStart)}
           </h2>
           <p className="text-sm text-ink-soft">

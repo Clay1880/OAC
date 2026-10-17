@@ -5,8 +5,8 @@ import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
-const CHILI = "#c4261d";
-const PAPER = "#f5efe3";
+const BRAND = "#c67c4e";
+const PAPER = "#ffffff";
 const out = fileURLToPath(new URL("../public/icons/", import.meta.url));
 
 // Glyph drawn in a 48x48 box, centred on (24, 24).
@@ -24,7 +24,7 @@ const icon = (size, glyphScale, radius) => {
   const offset = (size - box) / 2;
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-      <rect width="${size}" height="${size}" rx="${radius}" fill="${CHILI}" />
+      <rect width="${size}" height="${size}" rx="${radius}" fill="${BRAND}" />
       <g transform="translate(${offset} ${offset}) scale(${box / 48})">${glyph}</g>
     </svg>`);
 };

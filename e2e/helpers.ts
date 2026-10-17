@@ -100,12 +100,12 @@ export async function staffSignIn(page: Page, loginId: string, password: string)
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
-/** Sets the checkout clock to a slot's start time (campus time), as a student would: hour, minute, AM/PM. */
+/** Sets the checkout clock to a slot's start time (campus time), as a student would: hour, minute, AM/PM. Exact labels: "Hour" is also inside "Pyaaz Kachouri". */
 export async function chooseSlotTime(page: Page, slot: { starts_at: string }) {
   const [h, m] = campusClock(slot.starts_at).split(":").map(Number);
-  await page.getByLabel("Hour").selectOption(String(h % 12 || 12));
-  await page.getByLabel("Minute").selectOption(String(m).padStart(2, "0"));
-  await page.getByLabel("AM or PM").selectOption(h >= 12 ? "PM" : "AM");
+  await page.getByLabel("Hour", { exact: true }).selectOption(String(h % 12 || 12));
+  await page.getByLabel("Minute", { exact: true }).selectOption(String(m).padStart(2, "0"));
+  await page.getByLabel("AM or PM", { exact: true }).selectOption(h >= 12 ? "PM" : "AM");
 }
 
 /** Places a one-item order through the real UI and returns its code, id and the student. */

@@ -65,13 +65,13 @@ export function Badge({
   const chip =
     s?.chip ??
     (tone === "accent"
-      ? "bg-chili-soft text-chili-deep"
+      ? "bg-brand-soft text-brand-deep"
       : "bg-sunken text-ink-soft");
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-pill font-sans font-semibold leading-none",
-        size === "lg" ? "px-4 py-2.5 text-base" : "px-3 py-1.5 text-sm",
+        "inline-flex items-center gap-2 rounded-pill font-sans font-semibold uppercase leading-none tracking-wider",
+        size === "lg" ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-xs",
         chip,
         className,
       )}

@@ -1,21 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Sora } from "next/font/google";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
-// Display: warm, slightly soft serif for headings and the wordmark.
-const fraunces = Fraunces({
+// Headings, prices and body: Sora, the JavaGem typeface.
+const sora = Sora({
   subsets: ["latin"],
-  axes: ["opsz", "SOFT"],
-  variable: "--font-fraunces",
-  display: "swap",
-});
-
-// Body: clean, compact grotesque that stays legible at phone sizes.
-const instrument = Instrument_Sans({
-  subsets: ["latin"],
-  variable: "--font-instrument",
+  variable: "--font-sora",
   display: "swap",
 });
 
@@ -41,14 +33,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5efe3",
+  themeColor: "#313131",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en-IN"
-      className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable}`}
+      className={`${sora.variable} ${jetbrains.variable}`}
     >
       <body>
         <a

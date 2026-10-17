@@ -217,13 +217,13 @@ export function StaffConsole({
   return (
     <div className="flex flex-col gap-6">
       {!online && (
-        <p role="status" className="rounded-chip border-2 border-chili bg-chili-soft px-4 py-3 font-semibold text-chili-deep">
+        <p role="status" className="rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 font-semibold text-danger-deep">
           You are offline. Changes will not save until the connection is back.
         </p>
       )}
 
       {loadFailed && (
-        <p role="alert" className="rounded-chip border-2 border-chili bg-chili-soft px-4 py-3 text-chili-deep">
+        <p role="alert" className="rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 text-danger-deep">
           Could not load orders.{" "}
           <button type="button" onClick={() => void refetch()} className="font-semibold underline underline-offset-2">
             Try again

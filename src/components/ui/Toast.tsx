@@ -135,7 +135,7 @@ const toneStyles: Record<ToastTone, { card: string; icon: ReactNode }> = {
     icon: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   },
   error: {
-    card: "border-chili",
+    card: "border-danger",
     icon: <path d="M12 7v6M12 17v.01" />,
   },
   info: {
@@ -145,8 +145,8 @@ const toneStyles: Record<ToastTone, { card: string; icon: ReactNode }> = {
 };
 
 const iconTone: Record<ToastTone, string> = {
-  success: "bg-status-ready-dot text-on-chili",
-  error: "bg-chili text-on-chili",
+  success: "bg-status-ready-dot text-on-brand",
+  error: "bg-danger text-on-danger",
   info: "bg-ink text-paper",
 };
 

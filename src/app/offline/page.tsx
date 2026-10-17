@@ -6,8 +6,8 @@ export const metadata = { title: "Offline" };
 export default function OfflinePage() {
   return (
     <main id="main" className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
-      <p className="font-display text-lg font-semibold tracking-wide text-chili">OAC</p>
-      <h1 className="text-4xl font-semibold text-balance">You are offline</h1>
+      <p className="font-display text-lg font-bold tracking-tight text-brand">OAC</p>
+      <h1 className="text-2xl font-bold text-balance">You are offline</h1>
       <p className="text-lg text-ink-soft text-pretty">
         Your orders are safe. Reconnect to place a new order or see where your current one stands. If you
         already placed one, show your order ID at the counter.

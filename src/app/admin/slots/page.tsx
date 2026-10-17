@@ -16,7 +16,7 @@ export default async function AdminSlotsPage() {
 
   return (
     <>
-      <h1 className="mb-6 text-4xl font-semibold">Slots</h1>
+      <h1 className="mb-6 text-2xl font-bold">Slots</h1>
       <SlotsAdmin
         initialSlots={(data ?? []) as Slot[]}
         // en-CA formats as YYYY-MM-DD, which is what a date input wants.

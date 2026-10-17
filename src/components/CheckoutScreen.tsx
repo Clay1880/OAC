@@ -7,6 +7,7 @@ import { CartLines } from "@/components/CartLines";
 import { useCart } from "@/components/CartProvider";
 import { PickupTimePicker } from "@/components/PickupTimePicker";
 import { Button, buttonStyles } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
@@ -129,18 +130,20 @@ export function CheckoutScreen({
   return (
     <div className="flex flex-col gap-8">
       <section aria-labelledby="order-heading">
-        <h2 id="order-heading" className="mb-3 text-2xl font-semibold">
+        <h2 id="order-heading" className="mb-3 text-[1.0625rem] font-bold">
           Your order
         </h2>
-        <CartLines menu={menu} flaggedIds={flaggedIds} />
+        <Card className="p-4">
+          <CartLines menu={menu} flaggedIds={flaggedIds} />
+        </Card>
       </section>
 
       <section aria-labelledby="slot-heading">
-        <h2 id="slot-heading" className="mb-3 text-2xl font-semibold">
+        <h2 id="slot-heading" className="mb-3 text-[1.0625rem] font-bold">
           Pickup time
         </h2>
         {failed && (
-          <p role="alert" className="mb-3 rounded-chip border-2 border-chili bg-chili-soft px-4 py-3 text-chili-deep">
+          <p role="alert" className="mb-3 rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 text-danger-deep">
             Could not refresh pickup times.{" "}
             <button type="button" onClick={() => void refresh()} className="font-semibold underline underline-offset-2">
               Try again
@@ -150,7 +153,9 @@ export function CheckoutScreen({
         {slots.length === 0 ? (
           <EmptyState title="No slots left today" description="Pickup times are all taken or closed. Try again tomorrow." className="py-6" />
         ) : (
-          <PickupTimePicker slots={slots} onSelect={setSlotId} />
+          <Card className="p-4">
+            <PickupTimePicker slots={slots} onSelect={setSlotId} />
+          </Card>
         )}
       </section>
 

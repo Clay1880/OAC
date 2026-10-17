@@ -53,8 +53,8 @@ test.describe("installable app", () => {
     await page.goto("/login");
 
     await expect(page.getByRole("heading", { name: "You are offline" })).toBeVisible();
-    // The paper background only appears if the cached stylesheet loaded too.
-    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(245, 239, 227)");
+    // The canvas background only appears if the cached stylesheet loaded too.
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(249, 249, 249)");
     await context.setOffline(false);
   });
 });

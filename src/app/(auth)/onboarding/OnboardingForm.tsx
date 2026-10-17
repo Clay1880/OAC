@@ -35,6 +35,11 @@ export function OnboardingForm() {
       router.refresh();
       return;
     }
+    if (result.error === "SESSION_EXPIRED") {
+      router.replace("/login?expired=1");
+      router.refresh();
+      return;
+    }
     setLoading(false);
     setErrors(
       {
@@ -43,6 +48,7 @@ export function OnboardingForm() {
         INVALID_NAME: { fullName: "Enter your full name." },
         INVALID_REG_NO: { regNo: "Enter your registration number." },
         PROFILE_EXISTS: { form: "Your details are already saved." },
+        SESSION_EXPIRED: {},
         UNKNOWN: { form: "Something went wrong. Please try again." },
       }[result.error],
     );
@@ -82,7 +88,7 @@ export function OnboardingForm() {
         required
       />
       {errors.form && (
-        <p role="alert" className="text-sm font-medium text-chili-deep">
+        <p role="alert" className="text-sm font-medium text-danger-deep">
           {errors.form}
         </p>
       )}

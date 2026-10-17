@@ -21,14 +21,14 @@ export function Field({ label, hint, error, className, ...rest }: FieldProps) {
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "min-h-12 w-full rounded-chip border-2 bg-surface px-4 text-base text-ink placeholder:text-ink-faint",
-          error ? "border-chili" : "border-line-strong",
+          "min-h-12 w-full rounded-control border-2 bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:border-brand",
+          error ? "border-danger" : "border-line-strong",
           className,
         )}
         {...rest}
       />
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm font-medium text-chili-deep">
+        <p id={`${id}-error`} role="alert" className="text-sm font-medium text-danger-deep">
           {error}
         </p>
       ) : hint ? (

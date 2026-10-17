@@ -18,8 +18,8 @@ const swatches = [
   ["surface", "bg-surface"],
   ["sunken", "bg-sunken"],
   ["ink", "bg-ink"],
-  ["chili", "bg-chili"],
-  ["chili-soft", "bg-chili-soft"],
+  ["brand", "bg-brand"],
+  ["brand-soft", "bg-brand-soft"],
 ] as const;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -51,7 +51,7 @@ export default function DesignSheet() {
       </Section>
 
       <Section title="Type">
-        <p className="font-display text-4xl font-semibold">Fraunces for display</p>
+        <p className="font-display text-4xl font-semibold">Plus Jakarta Sans for display</p>
         <p>Instrument Sans for everything you read and tap.</p>
         <p className="order-code text-3xl">A-482 B-07</p>
         <p className="num text-xl">{formatPaise(12050)} · {formatPaise(0)} · {formatPaise(99900)}</p>

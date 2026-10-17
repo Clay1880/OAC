@@ -44,7 +44,7 @@ export function DefaultersAdmin({ defaulters }: { defaulters: Defaulter[] }) {
           <Card>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-2xl font-semibold">{d.name}</h2>
+                <h2 className="text-lg font-bold">{d.name}</h2>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                   <dt className="text-ink-soft">Phone</dt>
                   <dd>

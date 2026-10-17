@@ -35,13 +35,13 @@ export function EmptyState({
         className={cn(
           "mb-5 flex size-24 items-center justify-center rounded-full border-2 border-dashed",
           isError
-            ? "border-chili text-chili-deep"
+            ? "border-danger text-danger-deep"
             : "border-line-strong text-ink-soft",
         )}
       >
         {icon ?? <Plate isError={isError} />}
       </div>
-      <h2 className="font-display text-2xl font-semibold">{title}</h2>
+      <h2 className="font-display text-xl font-bold">{title}</h2>
       {description && (
         <p className="mt-2 text-ink-soft text-pretty">{description}</p>
       )}

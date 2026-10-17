@@ -80,6 +80,22 @@ test.describe("student sign-in", () => {
     await expect(page.locator("main").getByRole("alert")).toContainText("REG_NO_TAKEN");
     await expect(page).toHaveURL(/\/onboarding/);
   });
+
+  test("a session whose account was deleted is signed out with a clear message, not a vague error", async ({ page }) => {
+    const email = uniqueEmail();
+    await signInWithOtp(page, email);
+    await expect(page).toHaveURL(/\/onboarding/);
+    // The account vanishes while the browser still holds its login (e.g. a database reset).
+    const { data } = await admin.auth.admin.listUsers({ perPage: 200 });
+    const user = data.users.find((u) => u.email === email)!;
+    await admin.auth.admin.deleteUser(user.id);
+
+    await fillOnboarding(page);
+
+    await expect(page).toHaveURL(/\/login\?expired=1/);
+    await expect(page.getByText("Your session has expired. Please sign in again.")).toBeVisible();
+    await expect(page.getByLabel("College email")).toBeVisible(); // signed out, not bounced back to onboarding
+  });
 });
 
 test.describe("roles", () => {

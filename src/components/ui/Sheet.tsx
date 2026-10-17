@@ -65,7 +65,7 @@ export function Sheet({
           <div aria-hidden="true" className="mx-auto mt-2.5 h-1.5 w-10 rounded-pill bg-line-strong/50" />
           <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-3">
             <div className="min-w-0">
-              <h2 id={titleId} className="font-display text-2xl font-semibold">
+              <h2 id={titleId} className="font-display text-xl font-bold">
                 {title}
               </h2>
               {description && (

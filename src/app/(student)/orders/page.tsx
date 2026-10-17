@@ -18,7 +18,7 @@ export default async function OrdersPage() {
 
   return (
     <>
-      <h1 className="mb-4 text-4xl font-semibold">My orders</h1>
+      <h1 className="mb-4 text-2xl font-bold">My orders</h1>
       {!orders?.length ? (
         <EmptyState
           title="No orders yet"
@@ -30,7 +30,7 @@ export default async function OrdersPage() {
           }
         />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line rounded-card border border-line bg-surface px-4 shadow-edge">
           {orders.map((o) => {
             const slot = Array.isArray(o.slots) ? o.slots[0] : o.slots;
             return (

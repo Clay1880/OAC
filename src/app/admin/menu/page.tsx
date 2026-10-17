@@ -9,7 +9,7 @@ export default async function AdminMenuPage() {
   const { data } = await supabase.from("menu_items").select(MENU_COLUMNS).order("sort").order("name");
   return (
     <>
-      <h1 className="mb-6 text-4xl font-semibold">Menu</h1>
+      <h1 className="mb-6 text-2xl font-bold">Menu</h1>
       <MenuAdmin initialItems={(data ?? []) as MenuItem[]} />
     </>
   );

@@ -26,7 +26,7 @@ export default async function CheckoutPage() {
 
   return (
     <>
-      <h1 className="mb-6 text-4xl font-semibold">Checkout</h1>
+      <h1 className="mb-6 text-2xl font-bold">Checkout</h1>
       <CheckoutScreen
         initialMenu={(menu.data ?? []) as MenuItem[]}
         initialSlots={(slots.data ?? []) as Slot[]}

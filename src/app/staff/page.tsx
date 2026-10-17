@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/BrandMark";
 import { SignOutButton } from "@/components/SignOutButton";
 import { StaffConsole } from "@/components/staff/StaffConsole";
 import { fetchStaffData } from "@/lib/staff/queries";
@@ -15,9 +16,12 @@ export default async function StaffHome() {
 
   return (
     <main id="main" className="mx-auto min-h-dvh w-full max-w-xl px-4 pb-16">
-      <header className="flex items-center justify-between py-4">
-        <h1 className="text-4xl font-semibold">Counter</h1>
-        <SignOutButton variant="ghost" />
+      <header className="my-3 flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-2 pl-3 shadow-edge">
+        <div className="flex items-center gap-3">
+          <BrandMark />
+          <h1 className="text-2xl font-bold">Counter</h1>
+        </div>
+        <SignOutButton variant="ghost" className="rounded-pill" />
       </header>
       <StaffConsole
         initial={data}

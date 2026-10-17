@@ -91,7 +91,7 @@ export function SlotsAdmin({ initialSlots, today }: { initialSlots: Slot[]; toda
   return (
     <div className="flex flex-col gap-8">
       <Card>
-        <h2 className="mb-4 text-2xl font-semibold">Create slots</h2>
+        <h2 className="mb-4 text-[1.0625rem] font-bold">Create slots</h2>
         <form onSubmit={generate} className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Field label="Day" name="day" type="date" {...field("day")} required />
@@ -114,10 +114,10 @@ export function SlotsAdmin({ initialSlots, today }: { initialSlots: Slot[]; toda
       ) : (
         days.map((day) => (
           <section key={day} aria-labelledby={`day-${day}`}>
-            <h2 id={`day-${day}`} className="mb-1 border-b-2 border-ink pb-2 text-2xl font-semibold">
+            <h2 id={`day-${day}`} className="mb-3 text-[1.0625rem] font-bold">
               {day}
             </h2>
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-line rounded-card border border-line bg-surface px-4 shadow-edge">
               {slots
                 .filter((s) => formatSlotDay(s.starts_at) === day)
                 .map((slot) => (

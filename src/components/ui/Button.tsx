@@ -13,19 +13,19 @@ type StyleOptions = {
 };
 
 const base =
-  "inline-flex select-none items-center justify-center gap-2 rounded-chip font-sans font-semibold leading-none " +
+  "inline-flex select-none items-center justify-center gap-2 rounded-control font-sans font-semibold leading-none " +
   "transition-[transform,box-shadow,background-color,color] duration-150 ease-snap " +
   "disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-faint disabled:shadow-none disabled:border-line " +
   "aria-disabled:cursor-not-allowed";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-chili text-on-chili shadow-press hover:bg-chili-deep active:translate-y-0.5 active:shadow-none",
+    "bg-brand text-on-brand shadow-press hover:bg-brand-deep active:translate-y-0.5 active:shadow-none",
   secondary:
-    "border-2 border-ink bg-surface text-ink hover:bg-sunken active:translate-y-px",
+    "border-2 border-brand bg-surface text-brand hover:bg-brand-soft active:translate-y-px",
   ghost: "text-ink hover:bg-sunken active:translate-y-px",
   danger:
-    "border-2 border-chili bg-surface text-chili-deep hover:bg-chili-soft active:translate-y-px",
+    "border-2 border-danger bg-surface text-danger-deep hover:bg-danger-soft active:translate-y-px",
 };
 
 const sizes: Record<ButtonSize, string> = {

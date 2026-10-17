@@ -31,7 +31,7 @@ export default async function AdminStaffPage() {
 
   return (
     <>
-      <h1 className="mb-2 text-4xl font-semibold">Staff</h1>
+      <h1 className="mb-2 text-2xl font-bold">Staff</h1>
       <p className="mb-6 text-ink-soft">Counter logins. Give the temporary password to the staff member directly.</p>
       <StaffAdmin initialStaff={staff} />
     </>

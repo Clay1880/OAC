@@ -98,10 +98,10 @@ export function MenuAdmin({ initialItems }: { initialItems: MenuItem[] }) {
       ) : (
         groupByCategory(items).map(({ category, items: list }) => (
           <section key={category} aria-labelledby={`admin-cat-${category}`}>
-            <h2 id={`admin-cat-${category}`} className="mb-1 border-b-2 border-ink pb-2 text-2xl font-semibold">
+            <h2 id={`admin-cat-${category}`} className="mb-3 text-[1.0625rem] font-bold">
               {category}
             </h2>
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-line rounded-card border border-line bg-surface px-4 shadow-edge">
               {list.map((item) => (
                 <li key={item.id} data-item-id={item.id} className="flex items-center justify-between gap-3 py-3">
                   <div className={cn("min-w-0", !item.is_available && "opacity-60")}>
@@ -119,15 +119,15 @@ export function MenuAdmin({ initialItems }: { initialItems: MenuItem[] }) {
                       aria-label={`${item.name} available`}
                       onClick={() => void toggleAvailable(item)}
                       className={cn(
-                        "relative inline-flex h-12 w-16 items-center rounded-pill border-2 border-ink transition-colors duration-150",
-                        item.is_available ? "bg-status-ready" : "bg-sunken",
+                        "relative inline-flex h-12 w-16 items-center rounded-pill border-2 transition-colors duration-150",
+                        item.is_available ? "border-status-ready-dot bg-status-ready" : "border-line-strong bg-sunken",
                       )}
                     >
                       <span
                         aria-hidden="true"
                         className={cn(
-                          "absolute size-7 rounded-full bg-ink transition-transform duration-150",
-                          item.is_available ? "translate-x-7" : "translate-x-1",
+                          "absolute size-7 rounded-full transition-transform duration-150",
+                          item.is_available ? "translate-x-7 bg-status-ready-ink" : "translate-x-1 bg-ink-faint",
                         )}
                       />
                     </button>

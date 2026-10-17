@@ -83,6 +83,8 @@ export type CompleteProfileError =
   | "INVALID_REG_NO"
   | "REG_NO_TAKEN"
   | "PROFILE_EXISTS"
+  /** The account behind this session no longer exists (e.g. the database was reset). */
+  | "SESSION_EXPIRED"
   | "UNKNOWN";
 
 export async function completeProfile(input: {
@@ -97,6 +99,11 @@ export async function completeProfile(input: {
     p_reg_no: input.regNo,
   });
   if (!error) return { ok: true };
+  // 23503: the profile points at an auth user that is gone. The session is stale, so end it.
+  if (error.code === "23503") {
+    await supabase.auth.signOut();
+    return { ok: false, error: "SESSION_EXPIRED" };
+  }
   const known = ["INVALID_NAME", "INVALID_PHONE", "INVALID_REG_NO", "REG_NO_TAKEN", "PROFILE_EXISTS"] as const;
   const match = known.find((code) => code === error.message);
   return { ok: false, error: match ?? "UNKNOWN" };

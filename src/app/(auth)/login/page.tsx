@@ -6,7 +6,7 @@ import { LoginForm } from "./LoginForm";
 export const metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { inactive } = await searchParams;
+  const { inactive, expired } = await searchParams;
   return (
     <AuthShell
       title="Order ahead, skip the queue."
@@ -29,8 +29,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </>
       }
     >
+      {expired && (
+        <p role="alert" className="rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 text-danger-deep">
+          Your session has expired. Please sign in again.
+        </p>
+      )}
       {inactive && (
-        <p role="alert" className="rounded-chip border-2 border-chili bg-chili-soft px-4 py-3 text-chili-deep">
+        <p role="alert" className="rounded-chip border-2 border-danger bg-danger-soft px-4 py-3 text-danger-deep">
           This account has been deactivated. Please ask the canteen admin.
         </p>
       )}
