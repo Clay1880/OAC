@@ -32,7 +32,7 @@ describe("provisionStaff", () => {
   it("creates a staff login that signs in with the temporary password and must change it", async () => {
     const loginId = newId();
 
-    const result = await provisionStaff(admin, { loginId, fullName: "Ravi Kumar" });
+    const result = await provisionStaff(admin, { loginId, fullName: "Ravi Kumar", canteenId: (await defaultCanteen()).id });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -48,17 +48,17 @@ describe("provisionStaff", () => {
   it("normalises the login ID to lower case", async () => {
     const loginId = newId();
 
-    const result = await provisionStaff(admin, { loginId: ` ${loginId.toUpperCase()} `, fullName: "Ravi" });
+    const result = await provisionStaff(admin, { loginId: ` ${loginId.toUpperCase()} `, fullName: "Ravi", canteenId: (await defaultCanteen()).id });
 
     expect(result.ok && result.loginId).toBe(loginId);
   });
 
   it("rejects a taken ID with ID_TAKEN and leaves the first account alone", async () => {
     const loginId = newId();
-    const first = await provisionStaff(admin, { loginId, fullName: "First" });
+    const first = await provisionStaff(admin, { loginId, fullName: "First", canteenId: (await defaultCanteen()).id });
     expect(first.ok).toBe(true);
 
-    const second = await provisionStaff(admin, { loginId, fullName: "Second" });
+    const second = await provisionStaff(admin, { loginId, fullName: "Second", canteenId: (await defaultCanteen()).id });
 
     expect(second).toEqual({ ok: false, error: "ID_TAKEN" });
     const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("full_name", "Second");
@@ -66,18 +66,18 @@ describe("provisionStaff", () => {
   });
 
   it.each(["ab", "has space", "bad@char", "-leading", "x".repeat(33), ""])("rejects the ID %j with INVALID_ID", async (loginId) => {
-    expect(await provisionStaff(admin, { loginId, fullName: "Ravi" })).toEqual({ ok: false, error: "INVALID_ID" });
+    expect(await provisionStaff(admin, { loginId, fullName: "Ravi", canteenId: (await defaultCanteen()).id })).toEqual({ ok: false, error: "INVALID_ID" });
   });
 
   it("rejects an empty name", async () => {
-    expect(await provisionStaff(admin, { loginId: newId(), fullName: "   " })).toEqual({ ok: false, error: "INVALID_NAME" });
+    expect(await provisionStaff(admin, { loginId: newId(), fullName: "   ", canteenId: (await defaultCanteen()).id })).toEqual({ ok: false, error: "INVALID_NAME" });
   });
 });
 
 describe("resetStaffPassword", () => {
   it("issues a new temporary password, invalidates the old one and forces a change again", async () => {
     const loginId = newId();
-    const created = await provisionStaff(admin, { loginId, fullName: "Ravi" });
+    const created = await provisionStaff(admin, { loginId, fullName: "Ravi", canteenId: (await defaultCanteen()).id });
     if (!created.ok) throw new Error("setup");
     await admin.from("profiles").update({ must_change_password: false }).eq("id", created.userId);
 
@@ -104,7 +104,7 @@ describe("resetStaffPassword", () => {
 describe("setStaffActive", () => {
   it("deactivating cuts off a session that is already signed in, and reactivating restores it", async () => {
     const loginId = newId();
-    const created = await provisionStaff(admin, { loginId, fullName: "Ravi" });
+    const created = await provisionStaff(admin, { loginId, fullName: "Ravi", canteenId: (await defaultCanteen()).id });
     if (!created.ok) throw new Error("setup");
     const { client } = await signIn(loginId, created.temporaryPassword);
     const student = await createUser();

@@ -13,9 +13,10 @@ import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 import { fetchMenu, groupByCategory, type MenuItem } from "@/lib/menu";
 import { createClient } from "@/lib/supabase/browser";
+import type { Canteen } from "@/lib/tenancy/types";
 
 /** Menu with a pinned cart bar. Re-reads the menu when the app comes back to the foreground. */
-export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
+export function MenuScreen({ canteen, initialItems }: { canteen: Canteen; initialItems: MenuItem[] }) {
   const { cart } = useCart();
   const [items, setItems] = useState(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -26,14 +27,18 @@ export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
   useEffect(() => {
     async function refresh() {
       if (document.visibilityState !== "visible") return;
-      const fresh = await fetchMenu();
+      const fresh = await fetchMenu(canteen.id);
       if (fresh) setItems(fresh);
     }
     // The admin marking something sold out (or adding a dish) shows up without a refresh.
     const supabase = createClient();
     const channel = supabase
-      .channel("menu-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => void refresh())
+      .channel(`menu-live-${canteen.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu_items", filter: `canteen_id=eq.${canteen.id}` },
+        () => void refresh(),
+      )
       .subscribe();
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("online", refresh);
@@ -42,7 +47,7 @@ export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("online", refresh);
     };
-  }, []);
+  }, [canteen.id]);
 
   const count = cartCount(cart);
   const total = cartTotalPaise(cart, items.filter((i) => i.is_available));
@@ -50,7 +55,7 @@ export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
   if (items.length === 0) {
     return (
       <>
-        <HomeHero />
+        <HomeHero canteenName={canteen.name} />
         <div className="-mt-16">
           <EmptyState
             title="The menu is empty"
@@ -69,7 +74,7 @@ export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
 
   return (
     <>
-      <HomeHero>
+      <HomeHero canteenName={canteen.name}>
         <label className="relative mt-5 block">
           <span className="sr-only">Search the menu</span>
           <Icon name="search" className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-on-dark-soft" />

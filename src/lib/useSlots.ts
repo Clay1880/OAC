@@ -13,7 +13,7 @@ const TICK_MS = 15_000;
  * phone's clock is remembered, so a phone with the wrong time or timezone still sees the right
  * cutoffs. Seat counts refresh over Realtime and again when the app returns to the foreground.
  */
-export function useSlots(initial: Slot[], serverNowIso: string, cutoffMinutes: number) {
+export function useSlots(initial: Slot[], serverNowIso: string, cutoffMinutes: number, canteenId: string) {
   const [slots, setSlots] = useState(initial);
   const [failed, setFailed] = useState(false);
   // Server clock minus phone clock, taken once at mount.
@@ -26,6 +26,7 @@ export function useSlots(initial: Slot[], serverNowIso: string, cutoffMinutes: n
     const { data, error } = await createClient()
       .from("slots")
       .select("id, starts_at, capacity, booked_count")
+      .eq("canteen_id", canteenId)
       .gt("starts_at", new Date(Date.now() + skew).toISOString())
       .order("starts_at");
     if (error) {
@@ -34,13 +35,17 @@ export function useSlots(initial: Slot[], serverNowIso: string, cutoffMinutes: n
     }
     setFailed(false);
     setSlots(data as Slot[]);
-  }, [skew]);
+  }, [skew, canteenId]);
 
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel("slots-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "slots" }, () => void refresh())
+      .channel(`slots-live-${canteenId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "slots", filter: `canteen_id=eq.${canteenId}` },
+        () => void refresh(),
+      )
       .subscribe();
 
     const onVisible = () => {
@@ -57,7 +62,7 @@ export function useSlots(initial: Slot[], serverNowIso: string, cutoffMinutes: n
       window.removeEventListener("online", refresh);
       clearInterval(timer);
     };
-  }, [refresh, skew]);
+  }, [refresh, skew, canteenId]);
 
   return { slots: offeredSlots(slots, nowMs, cutoffMinutes), failed, refresh };
 }

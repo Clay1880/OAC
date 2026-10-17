@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createMenuItem, createSlot } from "../tests/integration/helpers";
+import { createMenuItem as createItemIn, createSlot as createSlotIn, seededCanteen } from "../tests/integration/helpers";
 import { admin, chooseSlotTime, signUpStudent } from "./helpers";
+
+// Students sign up into ait-pune, whose default canteen is the seeded oac one.
+const createMenuItem = async (fields: Parameters<typeof createItemIn>[0] = {}) =>
+  createItemIn({ ...fields, canteen_id: (await seededCanteen()).id });
+const createSlot = async (minutesFromNow: number, capacity: number) =>
+  createSlotIn(minutesFromNow, capacity, (await seededCanteen()).id);
 
 async function addToCart(page: Page, itemId: string, name: string) {
   await page.locator(`[data-item-id="${itemId}"]`).getByRole("button", { name: `Add ${name}` }).click();

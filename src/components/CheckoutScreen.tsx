@@ -16,6 +16,7 @@ import { cartTotalPaise } from "@/lib/cart";
 import { formatPaise } from "@/lib/format";
 import { fetchMenu, type MenuItem } from "@/lib/menu";
 import type { Slot } from "@/lib/slots";
+import type { Canteen } from "@/lib/tenancy/types";
 import { useSlots } from "@/lib/useSlots";
 
 const ERROR_COPY = {
@@ -29,11 +30,13 @@ const ERROR_COPY = {
 } as const;
 
 export function CheckoutScreen({
+  canteen,
   initialMenu,
   initialSlots,
   serverNow,
   cutoffMinutes,
 }: {
+  canteen: Canteen;
   initialMenu: MenuItem[];
   initialSlots: Slot[];
   serverNow: string;
@@ -42,7 +45,7 @@ export function CheckoutScreen({
   const router = useRouter();
   const { toast } = useToast();
   const { cart, ready, clear } = useCart();
-  const { slots, failed, refresh } = useSlots(initialSlots, serverNow, cutoffMinutes);
+  const { slots, failed, refresh } = useSlots(initialSlots, serverNow, cutoffMinutes, canteen.id);
   const [menu, setMenu] = useState(initialMenu);
   const [slotId, setSlotId] = useState<string | null>(null);
   const [flaggedIds, setFlaggedIds] = useState<string[]>([]);
@@ -90,6 +93,7 @@ export function CheckoutScreen({
     let result;
     try {
       result = await placeOrder({
+        canteenId: canteen.id,
         slotId: selected.id,
         items: cart.map((l) => ({ menuItemId: l.itemId, qty: l.qty })),
         requestId: requestId.current,
@@ -109,7 +113,7 @@ export function CheckoutScreen({
     toast({ title: ERROR_COPY[result.error], tone: "error" });
 
     if (result.error === "ITEM_UNAVAILABLE") {
-      const fresh = await fetchMenu();
+      const fresh = await fetchMenu(canteen.id);
       if (fresh) {
         setMenu(fresh);
         const open = new Set(fresh.filter((m) => m.is_available).map((m) => m.id));

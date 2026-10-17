@@ -27,7 +27,7 @@ const CREATE_ERRORS = {
   FAILED: "Something went wrong. Please try again.",
 } as const;
 
-export function StaffAdmin({ initialStaff }: { initialStaff: StaffRow[] }) {
+export function StaffAdmin({ canteenId, initialStaff }: { canteenId: string; initialStaff: StaffRow[] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [loginId, setLoginId] = useState("");
@@ -41,7 +41,7 @@ export function StaffAdmin({ initialStaff }: { initialStaff: StaffRow[] }) {
     event.preventDefault();
     setError(undefined);
     setCreating(true);
-    const result = await createStaff({ loginId, fullName });
+    const result = await createStaff({ loginId, fullName, canteenId });
     setCreating(false);
     if (!result.ok) {
       setError(CREATE_ERRORS[result.error]);

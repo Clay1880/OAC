@@ -1,18 +1,23 @@
 import { DuesBlock } from "@/components/DuesBlock";
 import { HomeHero } from "@/components/HomeHero";
 import { MenuScreen } from "@/components/MenuScreen";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { MENU_COLUMNS, type MenuItem } from "@/lib/menu";
 import { isDefaulter } from "@/lib/student";
 import { createClient } from "@/lib/supabase/server";
+import { studentCanteen } from "@/lib/tenancy/current";
 
 export const metadata = { title: "Menu" };
 
 export default async function MenuPage() {
+  const supabase = await createClient();
+  const canteen = await studentCanteen(supabase);
+
   if (await isDefaulter()) {
     return (
       <>
         <h1 className="sr-only">Ordering is paused</h1>
-        <HomeHero />
+        <HomeHero canteenName={canteen?.name ?? "Your canteen"} />
         <div className="-mt-16 rounded-card bg-surface shadow-lift">
           <DuesBlock />
         </div>
@@ -20,13 +25,21 @@ export default async function MenuPage() {
     );
   }
 
-  const supabase = await createClient();
-  const { data } = await supabase.from("menu_items").select(MENU_COLUMNS).order("sort").order("name");
+  if (!canteen) {
+    return <EmptyState title="No canteen is open yet" description="Check back in a little while." />;
+  }
+
+  const { data } = await supabase
+    .from("menu_items")
+    .select(MENU_COLUMNS)
+    .eq("canteen_id", canteen.id)
+    .order("sort")
+    .order("name");
 
   return (
     <>
       <h1 className="sr-only">What are you having?</h1>
-      <MenuScreen initialItems={(data ?? []) as MenuItem[]} />
+      <MenuScreen canteen={canteen} initialItems={(data ?? []) as MenuItem[]} />
     </>
   );
 }

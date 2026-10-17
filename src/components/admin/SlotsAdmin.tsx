@@ -19,25 +19,34 @@ const CAPACITY_ERRORS: Record<string, string> = {
 };
 
 /** From an hour ago, so a slot that just started is still listed while orders are being collected. */
-async function fetchUpcomingSlots(): Promise<Slot[] | null> {
+async function fetchUpcomingSlots(canteenId: string): Promise<Slot[] | null> {
   const since = new Date(Date.now() - 60 * 60_000).toISOString();
   const { data, error } = await createClient()
     .from("slots")
     .select(SLOT_COLUMNS)
+    .eq("canteen_id", canteenId)
     .gte("starts_at", since)
     .order("starts_at")
     .limit(300);
   return error ? null : (data as Slot[]);
 }
 
-export function SlotsAdmin({ initialSlots, today }: { initialSlots: Slot[]; today: string }) {
+export function SlotsAdmin({
+  canteenId,
+  initialSlots,
+  today,
+}: {
+  canteenId: string;
+  initialSlots: Slot[];
+  today: string;
+}) {
   const { toast } = useToast();
   const [slots, setSlots] = useState(initialSlots);
   const [form, setForm] = useState({ day: today, from: "13:00", to: "14:00", minutes: "10", capacity: "15" });
   const [creating, setCreating] = useState(false);
 
   async function reload() {
-    const fresh = await fetchUpcomingSlots();
+    const fresh = await fetchUpcomingSlots(canteenId);
     if (fresh) setSlots(fresh);
   }
 
@@ -51,6 +60,7 @@ export function SlotsAdmin({ initialSlots, today }: { initialSlots: Slot[]; toda
     }
     setCreating(true);
     const { data, error } = await createClient().rpc("generate_slots", {
+      p_canteen_id: canteenId,
       p_day: form.day,
       p_from: form.from,
       p_to: form.to,

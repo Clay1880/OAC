@@ -14,10 +14,11 @@ export type MenuItem = {
 export const MENU_COLUMNS = "id, name, description, price_paise, category, is_available, sort";
 
 /** Fresh menu from the browser. Returns null when the request fails, so callers keep what they have. */
-export async function fetchMenu(): Promise<MenuItem[] | null> {
+export async function fetchMenu(canteenId: string): Promise<MenuItem[] | null> {
   const { data, error } = await createClient()
     .from("menu_items")
     .select(MENU_COLUMNS)
+    .eq("canteen_id", canteenId)
     .order("sort")
     .order("name");
   return error ? null : (data as MenuItem[]);

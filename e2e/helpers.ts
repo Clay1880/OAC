@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { campusClock } from "../src/lib/slots";
-import { admin } from "../tests/integration/helpers";
+import { admin, seededCanteen, seededCollege } from "../tests/integration/helpers";
 
 export { admin };
 
@@ -87,8 +87,16 @@ export async function createStaffLogin(options: {
     role: options.role ?? "staff",
     is_active: options.active ?? true,
     must_change_password: options.mustChangePassword ?? false,
+    college_id: (await seededCollege()).id,
   });
   if (profileError) throw new Error(`createStaffLogin profile: ${profileError.message}`);
+  // Counter staff work at oac; admins are college admins and need no membership.
+  if ((options.role ?? "staff") === "staff") {
+    const { error: memberError } = await admin
+      .from("canteen_members")
+      .insert({ user_id: data.user.id, canteen_id: (await seededCanteen()).id, role: "staff" });
+    if (memberError) throw new Error(`createStaffLogin membership: ${memberError.message}`);
+  }
   return { loginId, password, userId: data.user.id };
 }
 
@@ -114,8 +122,13 @@ export async function placeTestOrder(
   opts: { itemName?: string; pricePaise?: number; alreadySignedIn?: boolean } = {},
 ) {
   const { createMenuItem, createSlot } = await import("../tests/integration/helpers");
-  const item = await createMenuItem({ name: opts.itemName ?? `Test Item ${randomUUID().slice(0, 6)}`, price_paise: opts.pricePaise ?? 4500 });
-  const slot = await createSlot(30, 5);
+  const oac = (await seededCanteen()).id;
+  const item = await createMenuItem({
+    name: opts.itemName ?? `Test Item ${randomUUID().slice(0, 6)}`,
+    price_paise: opts.pricePaise ?? 4500,
+    canteen_id: oac,
+  });
+  const slot = await createSlot(30, 5, oac);
   const student = opts.alreadySignedIn ? null : await signUpStudent(page);
   if (opts.alreadySignedIn) await page.goto("/");
 

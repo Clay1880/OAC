@@ -14,7 +14,11 @@ export type CreateStaffResult =
   | { ok: true; loginId: string; temporaryPassword: string }
   | { ok: false; error: "ID_TAKEN" | "INVALID_ID" | "INVALID_NAME" | "FORBIDDEN" | "FAILED" };
 
-export async function createStaff(input: { loginId: string; fullName: string }): Promise<CreateStaffResult> {
+export async function createStaff(input: {
+  loginId: string;
+  fullName: string;
+  canteenId: string;
+}): Promise<CreateStaffResult> {
   if (!(await requireAdmin())) return { ok: false, error: "FORBIDDEN" };
   const result = await staff.provisionStaff(createAdminClient(), input);
   return result.ok ? { ok: true, loginId: result.loginId, temporaryPassword: result.temporaryPassword } : result;

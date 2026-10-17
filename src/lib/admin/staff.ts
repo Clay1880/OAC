@@ -22,12 +22,15 @@ export type ProvisionStaffResult =
  */
 export async function provisionStaff(
   service: SupabaseClient,
-  input: { loginId: string; fullName: string },
+  input: { loginId: string; fullName: string; canteenId: string },
 ): Promise<ProvisionStaffResult> {
   const loginId = input.loginId.trim().toLowerCase();
   const fullName = input.fullName.replace(/\s+/g, " ").trim();
   if (!LOGIN_ID_PATTERN.test(loginId)) return { ok: false, error: "INVALID_ID" };
   if (fullName === "" || fullName.length > 100) return { ok: false, error: "INVALID_NAME" };
+
+  const { data: canteen } = await service.from("canteens").select("college_id").eq("id", input.canteenId).maybeSingle();
+  if (!canteen) return { ok: false, error: "FAILED" };
 
   const temporaryPassword = generateTemporaryPassword();
   const { data, error } = await service.auth.admin.createUser({
@@ -45,8 +48,12 @@ export async function provisionStaff(
     full_name: fullName,
     role: "staff",
     must_change_password: true,
+    college_id: canteen.college_id,
   });
-  if (profileError) {
+  const { error: memberError } = profileError
+    ? { error: profileError }
+    : await service.from("canteen_members").insert({ user_id: data.user.id, canteen_id: input.canteenId, role: "staff" });
+  if (profileError || memberError) {
     await service.auth.admin.deleteUser(data.user.id); // no login without a profile
     return { ok: false, error: "FAILED" };
   }

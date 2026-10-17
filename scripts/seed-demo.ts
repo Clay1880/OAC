@@ -46,7 +46,23 @@ async function findUserByEmail(admin: SupabaseClient, email: string): Promise<Us
   }
 }
 
-async function upsertAccount(admin: SupabaseClient, account: Account) {
+type Tenant = { collegeId: string; canteenId: string };
+
+/** The backfilled college (ait-pune) and its canteen (oac). */
+async function findTenant(admin: SupabaseClient): Promise<Tenant> {
+  const { data: college, error } = await admin.from("colleges").select("id").eq("slug", "ait-pune").single();
+  if (error || !college) throw new Error("College ait-pune not found. Run the database migrations first.");
+  const { data: canteen, error: canteenError } = await admin
+    .from("canteens")
+    .select("id")
+    .eq("college_id", college.id)
+    .eq("slug", "oac")
+    .single();
+  if (canteenError || !canteen) throw new Error("Canteen oac not found. Run the database migrations first.");
+  return { collegeId: college.id, canteenId: canteen.id };
+}
+
+async function upsertAccount(admin: SupabaseClient, account: Account, tenant: Tenant) {
   const email = `${account.loginId}@${account.domain}`;
   const created = await admin.auth.admin.createUser({
     email,
@@ -77,23 +93,31 @@ async function upsertAccount(admin: SupabaseClient, account: Account) {
       is_active: true,
       is_defaulter: false,
       must_change_password: false,
+      college_id: tenant.collegeId,
     },
     { onConflict: "id" },
   );
   if (error) throw error;
+
+  if (account.role === "staff") {
+    const { error: memberError } = await admin
+      .from("canteen_members")
+      .upsert({ user_id: user.id, canteen_id: tenant.canteenId, role: "staff" }, { onConflict: "user_id,canteen_id" });
+    if (memberError) throw memberError;
+  }
 }
 
 /** Slots every 5 minutes from now until campus midnight, so a rerun reuses the same rows. */
-async function openSlots(admin: SupabaseClient) {
+async function openSlots(admin: SupabaseClient, canteenId: string) {
   const now = Date.now();
   const dayEnd = Math.floor((now + IST_OFFSET_MS) / DAY_MS) * DAY_MS + DAY_MS - IST_OFFSET_MS;
   const step = SLOT_STEP_MIN * 60_000;
-  const rows: { starts_at: string; capacity: number }[] = [];
+  const rows: { canteen_id: string; starts_at: string; capacity: number }[] = [];
   for (let t = Math.ceil((now + MIN_LEAD_MIN * 60_000) / step) * step; t < dayEnd; t += step) {
-    rows.push({ starts_at: new Date(t).toISOString(), capacity: SLOT_CAPACITY });
+    rows.push({ canteen_id: canteenId, starts_at: new Date(t).toISOString(), capacity: SLOT_CAPACITY });
   }
   if (rows.length === 0) return 0;
-  const { error } = await admin.from("slots").upsert(rows, { onConflict: "starts_at", ignoreDuplicates: true });
+  const { error } = await admin.from("slots").upsert(rows, { onConflict: "canteen_id,starts_at", ignoreDuplicates: true });
   if (error) throw error;
   return rows.length;
 }
@@ -112,8 +136,9 @@ async function main() {
   }
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
-  for (const account of ACCOUNTS) await upsertAccount(admin, account);
-  const slots = await openSlots(admin);
+  const tenant = await findTenant(admin);
+  for (const account of ACCOUNTS) await upsertAccount(admin, account, tenant);
+  const slots = await openSlots(admin, tenant.canteenId);
 
   console.log("Demo accounts ready (password for all: " + PASSWORD + ")");
   console.log("  Student  /demo-login   ID: demo.student");

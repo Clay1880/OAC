@@ -66,6 +66,9 @@ async function main() {
   });
 
   const email = `${loginId}@${STAFF_EMAIL_DOMAIN}`;
+  const { data: college } = await admin.from("colleges").select("id").eq("slug", "ait-pune").maybeSingle();
+  if (!college) fail("College ait-pune not found. Run the database migrations first.");
+
   const created = await admin.auth.admin.createUser({
     email,
     password,
@@ -100,6 +103,7 @@ async function main() {
       role: "admin",
       is_active: true,
       must_change_password: false,
+      college_id: college.id,
     },
     { onConflict: "id" },
   );

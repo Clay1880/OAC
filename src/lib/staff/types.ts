@@ -18,6 +18,8 @@ export type StaffOrder = {
   student_name: string;
   reg_no: string | null;
   phone: string | null;
+  canteen_id: string;
+  canteen_name: string;
 };
 
 /** A line of an order, as the counter needs it for the prep summary. */

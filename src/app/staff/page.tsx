@@ -1,18 +1,17 @@
 import { BrandMark } from "@/components/BrandMark";
 import { SignOutButton } from "@/components/SignOutButton";
 import { StaffConsole } from "@/components/staff/StaffConsole";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { fetchStaffData } from "@/lib/staff/queries";
 import { createClient } from "@/lib/supabase/server";
+import { consoleCanteen } from "@/lib/tenancy/current";
 
 export const metadata = { title: "Counter" };
 
 export default async function StaffHome() {
   const supabase = await createClient();
   const now = new Date();
-  const [data, settings] = await Promise.all([
-    fetchStaffData(supabase),
-    supabase.from("app_settings").select("no_show_hold_minutes").single(),
-  ]);
+  const [data, canteen] = await Promise.all([fetchStaffData(supabase), consoleCanteen(supabase)]);
 
   return (
     <main id="main" className="mx-auto min-h-dvh w-full max-w-xl px-4 pb-16">
@@ -23,11 +22,11 @@ export default async function StaffHome() {
         </div>
         <SignOutButton variant="ghost" className="rounded-pill" />
       </header>
-      <StaffConsole
-        initial={data}
-        holdMinutes={settings.data?.no_show_hold_minutes ?? 15}
-        serverNow={now.toISOString()}
-      />
+      {canteen ? (
+        <StaffConsole initial={data} holdMinutes={canteen.no_show_hold_minutes ?? 15} serverNow={now.toISOString()} />
+      ) : (
+        <EmptyState title="You are not assigned to a canteen yet" description="Ask your college admin to add you to a canteen." />
+      )}
     </main>
   );
 }

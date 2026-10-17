@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createUser } from "../tests/integration/helpers";
+import { createUser, seededCanteen } from "../tests/integration/helpers";
 import { admin, placeTestOrder } from "./helpers";
 
 const currentStep = (page: Page) => page.getByRole("list", { name: "Order progress" }).locator('[aria-current="step"]');
 
 async function staffAdvance(orderId: string, to: "accepted" | "ready") {
-  const staff = await createUser("staff");
+  const staff = await createUser("staff", { canteenId: (await seededCanteen()).id });
   const accept = await staff.client.rpc("accept_order", { p_order_id: orderId });
   expect(accept.error).toBeNull();
   if (to === "ready") {

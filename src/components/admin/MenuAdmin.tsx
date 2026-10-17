@@ -23,7 +23,7 @@ const toDraft = (i: MenuItem): Draft => ({
   sort: String(i.sort),
 });
 
-export function MenuAdmin({ initialItems }: { initialItems: MenuItem[] }) {
+export function MenuAdmin({ canteenId, initialItems }: { canteenId: string; initialItems: MenuItem[] }) {
   const { toast } = useToast();
   const [items, setItems] = useState(initialItems);
   /** null = closed, "new" = adding, otherwise the item being edited. */
@@ -33,7 +33,7 @@ export function MenuAdmin({ initialItems }: { initialItems: MenuItem[] }) {
   const [saving, setSaving] = useState(false);
 
   async function reload() {
-    const fresh = await fetchMenu();
+    const fresh = await fetchMenu(canteenId);
     if (fresh) setItems(fresh);
   }
 
@@ -72,7 +72,7 @@ export function MenuAdmin({ initialItems }: { initialItems: MenuItem[] }) {
     const supabase = createClient();
     const { error } =
       editing === "new"
-        ? await supabase.from("menu_items").insert(row)
+        ? await supabase.from("menu_items").insert({ ...row, canteen_id: canteenId })
         : await supabase.from("menu_items").update(row).eq("id", (editing as MenuItem).id);
     setSaving(false);
     if (error) {

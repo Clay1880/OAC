@@ -18,6 +18,8 @@ const order = (over: Partial<StaffOrder> & { id: string }): StaffOrder => ({
   student_name: "Asha Rao",
   reg_no: "R1",
   phone: "9876543210",
+  canteen_id: "k1",
+  canteen_name: "Open Area Canteen",
   ...over,
 });
 
