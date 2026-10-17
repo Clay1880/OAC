@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import { AssistCard } from "@/components/assist/AssistCard";
 import { CartSheet } from "@/components/CartSheet";
 import { useCart } from "@/components/CartProvider";
 import { HomeHero } from "@/components/HomeHero";
@@ -13,10 +13,19 @@ import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 import { fetchMenu, groupByCategory, type MenuItem } from "@/lib/menu";
 import { createClient } from "@/lib/supabase/browser";
+import type { MealMoment } from "@/lib/assist/moment";
 import type { Canteen } from "@/lib/tenancy/types";
 
 /** Menu with a pinned cart bar. Re-reads the menu when the app comes back to the foreground. */
-export function MenuScreen({ canteen, initialItems }: { canteen: Canteen; initialItems: MenuItem[] }) {
+export function MenuScreen({
+  canteen,
+  initialItems,
+  moment,
+}: {
+  canteen: Canteen;
+  initialItems: MenuItem[];
+  moment: MealMoment;
+}) {
   const { cart } = useCart();
   const [items, setItems] = useState(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -90,17 +99,8 @@ export function MenuScreen({ canteen, initialItems }: { canteen: Canteen; initia
         </label>
       </HomeHero>
 
-      <div className="relative -mt-[4.5rem] h-40 overflow-hidden rounded-card bg-brand-deep p-5 text-on-brand shadow-lift">
-        <Image
-          src="/figma/photos/p1.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 576px) 60vw, 340px"
-          className="object-cover object-center [mask-image:linear-gradient(to_right,transparent_35%,black_85%)] [-webkit-mask-image:linear-gradient(to_right,transparent_35%,black_85%)]"
-        />
-        <span className="relative inline-block rounded-chip bg-danger px-2.5 py-1 text-xs font-semibold text-on-danger">Promo</span>
-        <p className="relative mt-3 max-w-[11.5rem] text-[1.375rem] font-semibold leading-tight">Order ahead, skip the queue</p>
+      <div className="relative -mt-[4.5rem]">
+        <AssistCard canteenId={canteen.id} moment={moment} />
       </div>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-4" role="group" aria-label="Categories">

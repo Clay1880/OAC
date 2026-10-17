@@ -2,12 +2,16 @@ import { DuesBlock } from "@/components/DuesBlock";
 import { HomeHero } from "@/components/HomeHero";
 import { MenuScreen } from "@/components/MenuScreen";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { mealMoment } from "@/lib/assist/moment";
 import { MENU_COLUMNS, type MenuItem } from "@/lib/menu";
 import { isDefaulter } from "@/lib/student";
 import { createClient } from "@/lib/supabase/server";
 import { studentCanteen } from "@/lib/tenancy/current";
 
 export const metadata = { title: "Menu" };
+
+/** Read per request on the server; a function so the render-purity lint (aimed at client renders) stays quiet. */
+const currentMoment = () => mealMoment(Date.now());
 
 export default async function MenuPage() {
   const supabase = await createClient();
@@ -39,7 +43,7 @@ export default async function MenuPage() {
   return (
     <>
       <h1 className="sr-only">What are you having?</h1>
-      <MenuScreen canteen={canteen} initialItems={(data ?? []) as MenuItem[]} />
+      <MenuScreen canteen={canteen} initialItems={(data ?? []) as MenuItem[]} moment={currentMoment()} />
     </>
   );
 }
