@@ -7,7 +7,15 @@ export type SuggestInput = {
   moment: MealMoment;
   moods: MoodId[];
   note: string;
-  candidates: { id: string; name: string; price_paise: number; tags: string[]; category: string }[];
+  candidates: {
+    id: string;
+    name: string;
+    price_paise: number;
+    tags: string[];
+    category: string;
+    /** Derived flags only: the student's usual, or popular on campus. Never counts, dates or order contents. */
+    badges?: ("usual" | "popular")[];
+  }[];
 };
 export type Pick = { id: string; reason: string };
 export type SuggestResult = { headline: string; picks: Pick[] };
@@ -62,18 +70,20 @@ export function parsePicks(raw: unknown, allowedIds: Set<string>): SuggestResult
   return { headline, picks };
 }
 
-/** Compact prompt: the canteen, the moment, the moods, the note and the candidates. Nothing about the student. */
-function promptFor(input: SuggestInput): string {
+/** Compact prompt: the canteen, the moment, the moods, the note and the candidates. Nothing about the student beyond plain badge tags. */
+export function promptFor(input: SuggestInput): string {
   const moods = MOODS.filter((m) => input.moods.includes(m.id)).map((m) => m.label);
   const lines = input.candidates.map(
-    (c) => `${c.id} | ${c.name} | ₹${(c.price_paise / 100).toFixed(2)} | ${c.tags.join(", ")}`,
+    (c) =>
+      `${c.id} | ${c.name} | ₹${(c.price_paise / 100).toFixed(2)} | ${c.tags.join(", ")}` +
+      (c.badges?.length ? ` | ${c.badges.join(", ")}` : ""),
   );
   return [
     `Canteen: ${input.canteenName}`,
     `Meal moment: ${momentLabel(input.moment)}`,
     `Moods: ${moods.length > 0 ? moods.join(", ") : "none given"}`,
     `Note: ${input.note.trim() || "none"}`,
-    "Candidates (id | name | price | tags):",
+    "Candidates (id | name | price | tags | badges, when any):",
     ...lines,
   ].join("\n");
 }

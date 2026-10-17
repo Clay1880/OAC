@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { parsePicks, suggestWithGemini, type SuggestInput } from "./gemini";
+import { parsePicks, promptFor, suggestWithGemini, type SuggestInput } from "./gemini";
 
 const allowed = new Set(["a", "b", "c"]);
 
@@ -59,5 +59,28 @@ describe("suggestWithGemini", () => {
       candidates: [{ id: "a", name: "Chai", price_paise: 1500, tags: ["hot", "drink"], category: "Drinks" }],
     };
     expect(await suggestWithGemini(input)).toBeNull();
+  });
+});
+
+describe("promptFor", () => {
+  const input: SuggestInput = {
+    canteenName: "Main Canteen",
+    moment: "lunch",
+    moods: [],
+    note: "",
+    candidates: [
+      { id: "a", name: "Chai", price_paise: 1500, tags: ["hot", "drink"], category: "Drinks", badges: ["usual", "popular"] },
+      { id: "b", name: "Dosa", price_paise: 4000, tags: ["veg"], category: "Meals" },
+    ],
+  };
+
+  it("writes badges as plain tags after the tags", () => {
+    const lines = promptFor(input).split("\n");
+    expect(lines.find((l) => l.startsWith("a |"))).toBe("a | Chai | ₹15.00 | hot, drink | usual, popular");
+    expect(lines.find((l) => l.startsWith("b |"))).toBe("b | Dosa | ₹40.00 | veg");
+  });
+
+  it("carries no counts or dates", () => {
+    expect(promptFor(input)).not.toMatch(/\d+ times|ordered|\d{4}-\d{2}-\d{2}/i);
   });
 });

@@ -91,4 +91,52 @@ describe("rankCandidates", () => {
     expect(out[0].item.name).toBe("Light");
     expect(out.find((c) => c.item.name === "Heavy")!.score).toBe(1);
   });
+
+  describe("signals", () => {
+    const a = item({ name: "Plain A", tags: ["veg", "hot"], meal_moments: ["lunch"], sort: 1 });
+    const b = item({ name: "Plain B", tags: ["veg", "hot"], meal_moments: ["lunch"], sort: 2 });
+
+    it("ranks an item had three times above an identical one, with the reason", () => {
+      const out = rankCandidates([a, b], { ...ctx, signals: { usual: { [b.id]: 3 }, popular: {} } });
+      expect(out[0].item.id).toBe(b.id);
+      expect(out[0].reasons).toContain("You've had this before");
+      expect(out[0].score - out[1].score).toBe(3);
+      expect(out[1].reasons).not.toContain("You've had this before");
+    });
+
+    it("gives +2 for a single past order", () => {
+      const out = rankCandidates([a, b], { ...ctx, signals: { usual: { [b.id]: 1 }, popular: {} } });
+      expect(out[0].item.id).toBe(b.id);
+      expect(out[0].score - out[1].score).toBe(2);
+    });
+
+    it("gives +1 and the reason to an item among the top five popular", () => {
+      const out = rankCandidates([a, b], { ...ctx, signals: { usual: {}, popular: { [b.id]: 4 } } });
+      expect(out[0].item.id).toBe(b.id);
+      expect(out[0].reasons).toContain("Popular here");
+      expect(out[0].score - out[1].score).toBe(1);
+
+      // Sixth place in popularity earns nothing.
+      const filler = Array.from({ length: 5 }, (_, i) => item({ name: `F${i}`, tags: ["veg"], sort: 10 + i }));
+      const popular = { [b.id]: 4, ...Object.fromEntries(filler.map((f, i) => [f.id, 100 - i])) };
+      const sixth = rankCandidates([a, b, ...filler], { ...ctx, signals: { usual: {}, popular } });
+      expect(sixth.find((c) => c.item.id === b.id)!.reasons).not.toContain("Popular here");
+    });
+
+    it("keeps reasons at three or fewer", () => {
+      const rich = item({ name: "Rich", tags: ["veg", "hot", "quick", "filling"], meal_moments: ["lunch"] });
+      const out = rankCandidates([rich], {
+        ...ctx,
+        moods: ["starving"],
+        signals: { usual: { [rich.id]: 5 }, popular: { [rich.id]: 9 } },
+      });
+      expect(out[0].reasons.length).toBeLessThanOrEqual(3);
+      expect(out[0].reasons).toContain("You've had this before");
+    });
+
+    it("behaves as before without signals", () => {
+      const out = rankCandidates([a, b], ctx);
+      expect(out.map((c) => c.item.name)).toEqual(["Plain A", "Plain B"]);
+    });
+  });
 });

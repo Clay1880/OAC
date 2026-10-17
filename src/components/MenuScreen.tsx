@@ -7,11 +7,14 @@ import { useCart } from "@/components/CartProvider";
 import { HomeHero } from "@/components/HomeHero";
 import { Icon } from "@/components/Icon";
 import { MenuList } from "@/components/MenuList";
+import { QuickRows } from "@/components/QuickRows";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cartCount, cartTotalPaise } from "@/lib/cart";
 import { cn } from "@/lib/cn";
 import { formatPaise } from "@/lib/format";
 import { fetchMenu, groupByCategory, type MenuItem } from "@/lib/menu";
+import { applyMenuView, isFlatView, PRICE_CAPS, type MenuSort } from "@/lib/menuFilter";
+import type { Signals } from "@/lib/signals";
 import { createClient } from "@/lib/supabase/browser";
 import type { MealMoment } from "@/lib/assist/moment";
 import type { Canteen } from "@/lib/tenancy/types";
@@ -21,10 +24,12 @@ export function MenuScreen({
   canteen,
   initialItems,
   moment,
+  signals,
 }: {
   canteen: Canteen;
   initialItems: MenuItem[];
   moment: MealMoment;
+  signals: Signals;
 }) {
   const { cart } = useCart();
   const [items, setItems] = useState(initialItems);
@@ -32,6 +37,8 @@ export function MenuScreen({
   // Look only: narrows what is shown, never what is in the cart or the menu.
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [sort, setSort] = useState<MenuSort>("default");
+  const [maxPaise, setMaxPaise] = useState<number | null>(null);
 
   useEffect(() => {
     async function refresh() {
@@ -76,10 +83,8 @@ export function MenuScreen({
   }
 
   const categories = groupByCategory(items).map((g) => g.category);
-  const needle = query.trim().toLowerCase();
-  const shown = items.filter(
-    (i) => (category === null || i.category === category) && (needle === "" || i.name.toLowerCase().includes(needle)),
-  );
+  const view = { query, category, maxPaise, sort };
+  const shown = applyMenuView(items, view);
 
   return (
     <>
@@ -103,6 +108,8 @@ export function MenuScreen({
         <AssistCard canteenId={canteen.id} moment={moment} />
       </div>
 
+      <QuickRows items={items} signals={signals} />
+
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-4" role="group" aria-label="Categories">
         {[null, ...categories].map((c) => (
           <button
@@ -120,10 +127,46 @@ export function MenuScreen({
         ))}
       </div>
 
+      <div className="-mx-4 -mt-2 flex gap-2 overflow-x-auto px-4 pb-4" role="group" aria-label="Sort and price">
+        {(
+          [
+            ["price-asc", "Price: low to high"],
+            ["price-desc", "Price: high to low"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={sort === value}
+            onClick={() => setSort(sort === value ? "default" : value)}
+            className={cn(
+              "min-h-11 shrink-0 whitespace-nowrap rounded-chip px-4 text-sm font-semibold transition-colors duration-150",
+              sort === value ? "bg-brand text-on-brand" : "bg-surface text-ink",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+        {PRICE_CAPS.map(({ paise, label }) => (
+          <button
+            key={paise}
+            type="button"
+            aria-pressed={maxPaise === paise}
+            onClick={() => setMaxPaise(maxPaise === paise ? null : paise)}
+            className={cn(
+              "min-h-11 shrink-0 whitespace-nowrap rounded-chip px-4 text-sm font-semibold transition-colors duration-150",
+              maxPaise === paise ? "bg-brand text-on-brand" : "bg-surface text-ink",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {shown.length === 0 ? (
-        <EmptyState title="Nothing matches" description="Try a different search or pick All." className="py-8" />
+        <EmptyState title="Nothing matches" description="Try a different search or clear the filters." className="py-8" />
       ) : (
-        <MenuList items={shown} />
+        <MenuList items={shown} flat={isFlatView(view)} />
       )}
 
       {count > 0 && (

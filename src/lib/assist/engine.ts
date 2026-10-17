@@ -1,4 +1,5 @@
 import type { MenuItem } from "@/lib/menu";
+import type { Signals } from "@/lib/signals";
 import { MOODS, type MoodId } from "./moods";
 import { momentLabel, type MealMoment } from "./moment";
 
@@ -6,6 +7,7 @@ export type Candidate = { item: MenuItem; score: number; reasons: string[] };
 
 const MAX_CANDIDATES = 12;
 const MAX_REASONS = 3;
+const TOP_POPULAR = 5;
 
 const TAG_REASONS: Record<string, string> = {
   hot: "Served warm",
@@ -23,15 +25,25 @@ const TAG_REASONS: Record<string, string> = {
 
 /**
  * Rules-engine ranking. Drops unavailable items (and non-veg when `vegOnly`), then scores
- * 3 per moment match + 2 per wanted tag - 2 per avoided tag. Best first, ties by menu order.
+ * 3 per moment match + 2 per wanted tag - 2 per avoided tag. With `signals`: +2 for an item the
+ * student has ordered before (+1 more from three orders) and +1 for a top-5 campus favourite.
+ * Best first, ties by menu order.
  */
 export function rankCandidates(
   items: MenuItem[],
-  ctx: { moment: MealMoment; moods: MoodId[]; vegOnly: boolean },
+  ctx: { moment: MealMoment; moods: MoodId[]; vegOnly: boolean; signals?: Signals },
 ): Candidate[] {
   const picked = MOODS.filter((m) => ctx.moods.includes(m.id));
   const wants = new Set(picked.flatMap((m) => m.wants));
   const avoids = new Set(picked.flatMap((m) => m.avoids));
+
+  const topPopular = new Set(
+    Object.entries(ctx.signals?.popular ?? {})
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, TOP_POPULAR)
+      .map(([id]) => id),
+  );
 
   const ranked: Candidate[] = [];
   for (const item of items) {
@@ -52,6 +64,18 @@ export function rankCandidates(
       }
       if (avoids.has(tag)) score -= 2;
     }
+    // Personal and campus signals lead, so they survive the three-reason cap.
+    const lead: string[] = [];
+    const had = ctx.signals?.usual[item.id] ?? 0;
+    if (had > 0) {
+      score += had >= 3 ? 3 : 2;
+      lead.push("You've had this before");
+    }
+    if (topPopular.has(item.id)) {
+      score += 1;
+      lead.push("Popular here");
+    }
+    reasons.unshift(...lead);
     if (reasons.length === 0) reasons.push("On the menu right now");
     ranked.push({ item, score, reasons: reasons.slice(0, MAX_REASONS) });
   }

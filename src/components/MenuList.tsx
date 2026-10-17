@@ -12,17 +12,25 @@ import { cn } from "@/lib/cn";
 // Dishes without a photo get a lettered tile; each category has its own cream or copper tint.
 const TINTS = ["bg-sunken text-brand-deep", "bg-brand-soft text-brand-deep"];
 
-export function MenuList({ items }: { items: MenuItem[] }) {
+/** `flat` shows every item in one grid, in the order given, with no category headings (for price sorts). */
+export function MenuList({ items, flat = false }: { items: MenuItem[]; flat?: boolean }) {
   const { cart, add, remove } = useCart();
   const qtyOf = (id: string) => cart.find((l) => l.itemId === id)?.qty ?? 0;
+  const grouped = groupByCategory(items);
+  const groups = flat ? [{ category: "", items }] : grouped;
+  // A dish keeps its category tint when the grid is flat.
+  const categoryOrder = grouped.map((g) => g.category);
+  const tintOf = (category: string) => TINTS[categoryOrder.indexOf(category) % TINTS.length];
 
   return (
     <div className="flex flex-col gap-7">
-      {groupByCategory(items).map(({ category, items: list }, index) => (
-        <section key={category} aria-labelledby={`cat-${category}`}>
-          <h2 id={`cat-${category}`} className="mb-3 text-base font-semibold">
-            {category}
-          </h2>
+      {groups.map(({ category, items: list }) => (
+        <section key={category} aria-labelledby={flat ? undefined : `cat-${category}`} aria-label={flat ? "Menu" : undefined}>
+          {!flat && (
+            <h2 id={`cat-${category}`} className="mb-3 text-base font-semibold">
+              {category}
+            </h2>
+          )}
           <ul className="grid grid-cols-2 gap-3">
             {list.map((item) => {
               const qty = qtyOf(item.id);
@@ -42,14 +50,14 @@ export function MenuList({ items }: { items: MenuItem[] }) {
                     ) : (
                       <span
                         aria-hidden="true"
-                        className={cn("flex size-full items-center justify-center text-4xl font-semibold", TINTS[index % TINTS.length])}
+                        className={cn("flex size-full items-center justify-center text-4xl font-semibold", tintOf(item.category))}
                       >
                         {item.name.charAt(0)}
                       </span>
                     )}
                   </div>
                   <h3 className="mt-2.5 line-clamp-2 min-h-[2.6em] text-[0.9375rem] font-semibold leading-snug">{item.name}</h3>
-                  <p className="mt-0.5 line-clamp-1 text-xs text-ink-faint">{item.description ?? category}</p>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-ink-faint">{item.description ?? item.category}</p>
                   <div className="mt-2.5 flex items-center justify-between gap-2">
                     <p className="num text-base font-semibold">{formatPaise(item.price_paise)}</p>
                     {!item.is_available ? (
