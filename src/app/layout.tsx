@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -32,6 +33,8 @@ export const metadata: Metadata = {
   },
   description:
     "Pre-order from the college canteen, pick a pickup slot, and pay at the counter.",
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "OAC", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -55,6 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <ToastProvider>{children}</ToastProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

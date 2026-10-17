@@ -45,11 +45,15 @@ export async function acceptOrder(orderId: string): Promise<LifecycleResult> {
 export async function markReady(orderId: string): Promise<LifecycleResult> {
   const result = await runLifecycle("mark_ready", orderId);
   if (result.ok) {
-    await sendPushToUser(result.order.student_id, {
-      title: "Your order is ready",
-      body: `Your order ${result.order.code} is ready — show this ID at the counter.`,
-      url: `/orders/${result.order.code}`,
-    });
+    try {
+      await sendPushToUser(result.order.student_id, {
+        title: "Your order is ready",
+        body: `Your order ${result.order.code} is ready — show this ID at the counter.`,
+        url: `/orders/${result.order.code}`,
+      });
+    } catch {
+      // sendPushToUser never throws, but a notification must never fail marking an order ready.
+    }
   }
   return result;
 }

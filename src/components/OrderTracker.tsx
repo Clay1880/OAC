@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
+import { PushOptIn } from "@/components/PushOptIn";
 import { formatPaise, formatSlotTime } from "@/lib/format";
 import { cancelOrder } from "@/lib/orders/actions";
 import type { Order, OrderStatus } from "@/lib/orders/types";
@@ -46,6 +48,8 @@ export function OrderTracker({
   }
 
   const ready = order.status === "ready";
+  // Alerts only help while the order is still on its way to ready.
+  const awaitingReady = order.status === "placed" || order.status === "accepted";
   const showCounterPayment = order.status !== "cancelled" && order.status !== "collected";
 
   return (
@@ -80,6 +84,13 @@ export function OrderTracker({
           <p className="mt-1 text-sm text-ink-soft">Pay at the counter when you collect.</p>
         )}
       </Card>
+
+      {awaitingReady && (
+        <div className="flex flex-col gap-2">
+          <PushOptIn />
+          <InstallPrompt />
+        </div>
+      )}
 
       <section aria-labelledby="progress-heading">
         <h2 id="progress-heading" className="mb-1 text-2xl font-semibold">
