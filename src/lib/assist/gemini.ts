@@ -70,14 +70,18 @@ export function parsePicks(raw: unknown, allowedIds: Set<string>): SuggestResult
   return { headline, picks };
 }
 
+/** One menu line for a prompt: `id | name | ₹price | tags`, plus plain badge tags when any. */
+export function candidateLine(c: SuggestInput["candidates"][number]): string {
+  return (
+    `${c.id} | ${c.name} | ₹${(c.price_paise / 100).toFixed(2)} | ${c.tags.join(", ")}` +
+    (c.badges?.length ? ` | ${c.badges.join(", ")}` : "")
+  );
+}
+
 /** Compact prompt: the canteen, the moment, the moods, the note and the candidates. Nothing about the student beyond plain badge tags. */
 export function promptFor(input: SuggestInput): string {
   const moods = MOODS.filter((m) => input.moods.includes(m.id)).map((m) => m.label);
-  const lines = input.candidates.map(
-    (c) =>
-      `${c.id} | ${c.name} | ₹${(c.price_paise / 100).toFixed(2)} | ${c.tags.join(", ")}` +
-      (c.badges?.length ? ` | ${c.badges.join(", ")}` : ""),
-  );
+  const lines = input.candidates.map(candidateLine);
   return [
     `Canteen: ${input.canteenName}`,
     `Meal moment: ${momentLabel(input.moment)}`,

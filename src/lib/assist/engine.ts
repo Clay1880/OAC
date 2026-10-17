@@ -27,11 +27,11 @@ const TAG_REASONS: Record<string, string> = {
  * Rules-engine ranking. Drops unavailable items (and non-veg when `vegOnly`), then scores
  * 3 per moment match + 2 per wanted tag - 2 per avoided tag. With `signals`: +2 for an item the
  * student has ordered before (+1 more from three orders) and +1 for a top-5 campus favourite.
- * Best first, ties by menu order.
+ * Best first, ties by menu order. Keeps the top 12, or `limit` when given.
  */
 export function rankCandidates(
   items: MenuItem[],
-  ctx: { moment: MealMoment; moods: MoodId[]; vegOnly: boolean; signals?: Signals },
+  ctx: { moment: MealMoment; moods: MoodId[]; vegOnly: boolean; signals?: Signals; limit?: number },
 ): Candidate[] {
   const picked = MOODS.filter((m) => ctx.moods.includes(m.id));
   const wants = new Set(picked.flatMap((m) => m.wants));
@@ -81,5 +81,5 @@ export function rankCandidates(
   }
 
   ranked.sort((a, b) => b.score - a.score || a.item.sort - b.item.sort);
-  return ranked.slice(0, MAX_CANDIDATES);
+  return ranked.slice(0, ctx.limit ?? MAX_CANDIDATES);
 }

@@ -54,3 +54,11 @@ export function topUsual(signals: Signals, items: MenuItem[], n = 4): MenuItem[]
 export function topPopular(signals: Signals, items: MenuItem[], n = 6): MenuItem[] {
   return top(signals.popular, items, n);
 }
+
+/** Plain flags for the model: the student's usual, or popular on campus. Never counts. */
+export function badgesFor(id: string, signals: Signals): ("usual" | "popular")[] {
+  const badges: ("usual" | "popular")[] = [];
+  if ((signals.usual[id] ?? 0) > 0) badges.push("usual");
+  if ((signals.popular[id] ?? 0) > 0) badges.push("popular");
+  return badges;
+}

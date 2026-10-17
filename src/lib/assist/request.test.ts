@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSuggestRequest } from "./request";
+import { parseChatRequest, parseSuggestRequest } from "./request";
 
 const canteenId = "11111111-1111-1111-1111-111111111111";
 
@@ -16,5 +16,18 @@ describe("parseSuggestRequest", () => {
     expect(
       parseSuggestRequest({ canteenId, moods: ["tired", "quick"], note: "no onions", vegOnly: true }),
     ).toEqual({ canteenId, moods: ["tired", "quick"], note: "no onions", vegOnly: true });
+  });
+});
+
+describe("parseChatRequest", () => {
+  it("accepts one user turn", () => {
+    expect(parseChatRequest({ canteenId, turns: [{ role: "user", text: "hi" }] })).toEqual({
+      canteenId,
+      turns: [{ role: "user", text: "hi" }],
+    });
+  });
+
+  it("rejects a non-array turns value", () => {
+    expect(parseChatRequest({ canteenId, turns: "hi" })).toBeNull();
   });
 });

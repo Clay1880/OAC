@@ -140,3 +140,15 @@ describe("rankCandidates", () => {
     });
   });
 });
+
+describe("rankCandidates limit", () => {
+  const many = Array.from({ length: 50 }, (_, i) => item({ name: `Dish ${i}` }));
+
+  it("keeps 12 by default", () => {
+    expect(rankCandidates(many, ctx)).toHaveLength(12);
+  });
+
+  it("returns up to the given limit", () => {
+    expect(rankCandidates(many, { ...ctx, limit: 40 })).toHaveLength(40);
+  });
+});

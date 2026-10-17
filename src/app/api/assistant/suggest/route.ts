@@ -6,17 +6,9 @@ import { rateLimit } from "@/lib/assist/rateLimit";
 import { parseSuggestRequest } from "@/lib/assist/request";
 import { rulesSuggestion, suggest } from "@/lib/assist/suggest";
 import { MENU_COLUMNS, type MenuItem } from "@/lib/menu";
-import { fetchSignals, type Signals } from "@/lib/signals";
+import { badgesFor, fetchSignals } from "@/lib/signals";
 import { createClient } from "@/lib/supabase/server";
 import { studentCanteen } from "@/lib/tenancy/current";
-
-/** Plain flags for the model: the student's usual, or popular on campus. Never counts. */
-function badgesFor(id: string, signals: Signals): ("usual" | "popular")[] {
-  const badges: ("usual" | "popular")[] = [];
-  if ((signals.usual[id] ?? 0) > 0) badges.push("usual");
-  if ((signals.popular[id] ?? 0) > 0) badges.push("popular");
-  return badges;
-}
 
 /**
  * Suggests up to three menu items for the signed-in student's mood and meal moment. Gemini picks
