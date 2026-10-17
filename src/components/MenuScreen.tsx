@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { cartCount, cartTotalPaise } from "@/lib/cart";
 import { formatPaise } from "@/lib/format";
 import { fetchMenu, type MenuItem } from "@/lib/menu";
+import { createClient } from "@/lib/supabase/browser";
 
 /** Menu with a pinned cart bar. Re-reads the menu when the app comes back to the foreground. */
 export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
@@ -21,9 +22,16 @@ export function MenuScreen({ initialItems }: { initialItems: MenuItem[] }) {
       const fresh = await fetchMenu();
       if (fresh) setItems(fresh);
     }
+    // The admin marking something sold out (or adding a dish) shows up without a refresh.
+    const supabase = createClient();
+    const channel = supabase
+      .channel("menu-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => void refresh())
+      .subscribe();
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("online", refresh);
     return () => {
+      void supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("online", refresh);
     };

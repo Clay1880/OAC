@@ -34,3 +34,20 @@ export function formatSlotTime(iso: string): string {
   );
   return `${parts.hour}:${parts.minute} ${String(parts.dayPeriod).toUpperCase()}`;
 }
+
+const slotDay = new Intl.DateTimeFormat("en-US", {
+  timeZone: CAMPUS_TZ,
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
+/** ISO instant -> campus calendar day, e.g. "2026-10-19T07:45:00Z" -> "Mon, 19 Oct". */
+export function formatSlotDay(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    throw new RangeError(`formatSlotDay got an invalid date: ${iso}`);
+  }
+  const parts = Object.fromEntries(slotDay.formatToParts(date).map((p) => [p.type, p.value]));
+  return `${parts.weekday}, ${parts.day} ${parts.month}`;
+}
