@@ -180,6 +180,31 @@ describe("lifecycle across canteens", () => {
     expect((await statusOf(order.id)).status).toBe("placed");
   });
 
+  it("a staff membership in another college's canteen grants nothing there", async () => {
+    const canteenA = await defaultCanteen();
+    const collegeB = await createCollege();
+    const canteenB = await createCanteen({ collegeId: collegeB.id });
+    const staff = await createUser("staff", { canteenId: canteenB.id, collegeId: collegeB.id });
+    // A stray row (only the service role can write memberships): college B staff at college A's canteen.
+    const { error: strayError } = await admin
+      .from("canteen_members")
+      .insert({ user_id: staff.id, canteen_id: canteenA.id, role: "owner" });
+    expect(strayError).toBeNull();
+    const student = await createUser();
+    const { order } = await placeIn(student, canteenA.id);
+
+    const { data: rows, error: readError } = await staff.client
+      .from("staff_orders_v")
+      .select("id")
+      .eq("canteen_id", canteenA.id);
+    const { error } = await staff.client.rpc("accept_order", { p_order_id: order.id });
+
+    expect(readError).toBeNull();
+    expect(rows).toEqual([]);
+    expect(error?.message).toBe("FORBIDDEN");
+    expect((await statusOf(order.id)).status).toBe("placed");
+  });
+
   it("orders on a canteen that is later suspended can still be accepted, readied and collected", async () => {
     const canteen = await createCanteen();
     const staff = await createUser("staff", { canteenId: canteen.id });

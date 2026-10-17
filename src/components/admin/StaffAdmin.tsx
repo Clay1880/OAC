@@ -23,6 +23,7 @@ const CREATE_ERRORS = {
   ID_TAKEN: "That login ID is already used.",
   INVALID_ID: "Use 3 to 32 letters, numbers, dots, dashes or underscores, starting with a letter or number.",
   INVALID_NAME: "Enter the staff member's name.",
+  CANTEEN_NOT_FOUND: "That canteen was not found. Reload the page and try again.",
   FORBIDDEN: "Only the admin can do this.",
   FAILED: "Something went wrong. Please try again.",
 } as const;

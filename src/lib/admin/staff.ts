@@ -13,24 +13,37 @@ export function generateTemporaryPassword(): string {
 
 export type ProvisionStaffResult =
   | { ok: true; userId: string; loginId: string; temporaryPassword: string }
-  | { ok: false; error: "ID_TAKEN" | "INVALID_ID" | "INVALID_NAME" | "FAILED" };
+  | { ok: false; error: "ID_TAKEN" | "INVALID_ID" | "INVALID_NAME" | "CANTEEN_NOT_FOUND" | "FAILED" };
+
+/*
+ * Every function here takes the service-role client, which bypasses every database rule. Callers
+ * must have verified the admin first (see `adminCaller`) and pass that admin's college: each lookup
+ * and write is limited to `callerCollegeId`, so one college's admin can never touch another's staff.
+ */
 
 /**
- * Creates a staff login. Takes the service-role client: callers must have verified the admin first
- * (see `adminCallerId`). The auth user is marked `provisioned` (only the service role can set that),
- * which is what lets a `@staff.oac.local` address past the sign-up guard.
+ * Creates a staff login at a canteen of the caller's college. The auth user is marked `provisioned`
+ * (only the service role can set that), which is what lets a `@staff.oac.local` address past the
+ * sign-up guard. A canteen that does not exist and one in another college look the same:
+ * CANTEEN_NOT_FOUND.
  */
 export async function provisionStaff(
   service: SupabaseClient,
-  input: { loginId: string; fullName: string; canteenId: string },
+  input: { loginId: string; fullName: string; canteenId: string; callerCollegeId: string },
 ): Promise<ProvisionStaffResult> {
   const loginId = input.loginId.trim().toLowerCase();
   const fullName = input.fullName.replace(/\s+/g, " ").trim();
   if (!LOGIN_ID_PATTERN.test(loginId)) return { ok: false, error: "INVALID_ID" };
   if (fullName === "" || fullName.length > 100) return { ok: false, error: "INVALID_NAME" };
 
-  const { data: canteen } = await service.from("canteens").select("college_id").eq("id", input.canteenId).maybeSingle();
-  if (!canteen) return { ok: false, error: "FAILED" };
+  const { data: canteen, error: canteenError } = await service
+    .from("canteens")
+    .select("college_id")
+    .eq("id", input.canteenId)
+    .eq("college_id", input.callerCollegeId)
+    .maybeSingle();
+  if (canteenError && canteenError.code !== "22P02") return { ok: false, error: "FAILED" }; // 22P02: not a uuid
+  if (!canteen || canteen.college_id !== input.callerCollegeId) return { ok: false, error: "CANTEEN_NOT_FOUND" };
 
   const temporaryPassword = generateTemporaryPassword();
   const { data, error } = await service.auth.admin.createUser({
@@ -60,22 +73,34 @@ export async function provisionStaff(
   return { ok: true, userId: data.user.id, loginId, temporaryPassword };
 }
 
-async function isStaff(service: SupabaseClient, userId: string): Promise<boolean> {
-  const { data } = await service.from("profiles").select("role").eq("id", userId).maybeSingle();
-  return data?.role === "staff";
+/** True only for a staff profile in `collegeId`; another college's staff count as "not staff". */
+async function isStaffOf(service: SupabaseClient, userId: string, collegeId: string): Promise<boolean> {
+  const { data } = await service
+    .from("profiles")
+    .select("role, college_id")
+    .eq("id", userId)
+    .eq("college_id", collegeId)
+    .maybeSingle();
+  return data?.role === "staff" && data.college_id === collegeId;
 }
 
 export async function resetStaffPassword(
   service: SupabaseClient,
   staffId: string,
+  callerCollegeId: string,
 ): Promise<{ ok: true; temporaryPassword: string } | { ok: false; error: "NOT_STAFF" | "FAILED" }> {
-  if (!(await isStaff(service, staffId))) return { ok: false, error: "NOT_STAFF" };
+  if (!(await isStaffOf(service, staffId, callerCollegeId))) return { ok: false, error: "NOT_STAFF" };
 
   const temporaryPassword = generateTemporaryPassword();
   const { error } = await service.auth.admin.updateUserById(staffId, { password: temporaryPassword });
   if (error) return { ok: false, error: "FAILED" };
 
-  const { error: flagError } = await service.from("profiles").update({ must_change_password: true }).eq("id", staffId);
+  const { error: flagError } = await service
+    .from("profiles")
+    .update({ must_change_password: true })
+    .eq("id", staffId)
+    .eq("role", "staff")
+    .eq("college_id", callerCollegeId);
   return flagError ? { ok: false, error: "FAILED" } : { ok: true, temporaryPassword };
 }
 
@@ -83,12 +108,18 @@ export async function resetStaffPassword(
  * Deactivated staff are cut off at once: every staff RPC and policy checks `current_role()`, which
  * is null for an inactive profile, and the proxy signs them out on their next page request.
  */
-export async function setStaffActive(service: SupabaseClient, staffId: string, active: boolean): Promise<{ ok: boolean }> {
+export async function setStaffActive(
+  service: SupabaseClient,
+  staffId: string,
+  active: boolean,
+  callerCollegeId: string,
+): Promise<{ ok: boolean }> {
   const { data, error } = await service
     .from("profiles")
     .update({ is_active: active })
     .eq("id", staffId)
     .eq("role", "staff")
+    .eq("college_id", callerCollegeId)
     .select("id");
   return { ok: !error && (data?.length ?? 0) === 1 };
 }
