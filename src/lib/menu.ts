@@ -9,9 +9,11 @@ export type MenuItem = {
   category: string;
   is_available: boolean;
   sort: number;
+  tags: string[];
+  meal_moments: string[];
 };
 
-export const MENU_COLUMNS = "id, name, description, price_paise, category, is_available, sort";
+export const MENU_COLUMNS = "id, name, description, price_paise, category, is_available, sort, tags, meal_moments";
 
 /** Fresh menu from the browser. Returns null when the request fails, so callers keep what they have. */
 export async function fetchMenu(canteenId: string): Promise<MenuItem[] | null> {

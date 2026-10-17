@@ -79,3 +79,129 @@ from (values
 ) as m (name, price_paise, category, sort);
 
 -- No sample slots: `npx tsx scripts/seed-demo.ts` (or the admin console) opens pickup times.
+
+-- Tags and meal moments for the seeded OAC menu (see 0010_menu_tags.sql).
+update public.menu_items set tags = '{veg,hot,spicy,snack,quick}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Aloo chat';
+update public.menu_items set tags = '{veg,cold,light,sweet,snack}', meal_moments = '{snack,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Fruit chat';
+update public.menu_items set tags = '{veg,cold,light,sweet,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Fruit Basket';
+update public.menu_items set tags = '{veg,spicy,snack,quick}', meal_moments = '{snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Pani Puri';
+update public.menu_items set tags = '{veg,spicy,snack,quick}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Dhabeli';
+update public.menu_items set tags = '{veg,hot,spicy,filling,meal}', meal_moments = '{breakfast,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Misal';
+update public.menu_items set tags = '{veg,spicy,snack,quick}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Bhel';
+update public.menu_items set tags = '{veg,hot,snack,quick}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Patice';
+update public.menu_items set tags = '{non-veg,hot,snack,quick}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chicken Patice';
+update public.menu_items set tags = '{egg,hot,filling,quick}', meal_moments = '{breakfast,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Anda Bhurji (2 Eggs)';
+update public.menu_items set tags = '{egg,hot,quick,filling}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Bread Omlete';
+update public.menu_items set tags = '{veg,hot,quick,snack}', meal_moments = '{snack,dinner,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Maggi';
+update public.menu_items set tags = '{veg,hot,quick,snack}', meal_moments = '{snack,dinner,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Maggi';
+update public.menu_items set tags = '{veg,hot,quick,snack,spicy}', meal_moments = '{snack,dinner,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Masala Maggi';
+update public.menu_items set tags = '{egg,hot,quick,snack,filling}', meal_moments = '{snack,dinner,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Anda Maggi';
+update public.menu_items set tags = '{veg,hot,spicy,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Pyaaz Kachouri';
+update public.menu_items set tags = '{veg,hot,spicy,snack}', meal_moments = '{snack,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Manchurian (Dry)';
+update public.menu_items set tags = '{veg,hot,spicy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Manchurian (Gravy)';
+update public.menu_items set tags = '{veg,hot,snack}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Cutlet';
+update public.menu_items set tags = '{veg,hot,heavy,snack}', meal_moments = '{snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Paneer Pakoda';
+update public.menu_items set tags = '{veg,hot,spicy,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Kachori';
+update public.menu_items set tags = '{veg,light,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Dhokla';
+update public.menu_items set tags = '{veg,light,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Sandwich Dhokla';
+update public.menu_items set tags = '{veg,light,quick,snack}', meal_moments = '{breakfast,snack,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Sandwich';
+update public.menu_items set tags = '{non-veg,filling,quick,snack}', meal_moments = '{snack,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chicken Sandwich';
+update public.menu_items set tags = '{veg,light,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chutney Sandwich';
+update public.menu_items set tags = '{veg,hot,filling,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Cheese Sandwich';
+update public.menu_items set tags = '{veg,hot,filling,snack}', meal_moments = '{snack,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Cheese Roll';
+update public.menu_items set tags = '{non-veg,hot,filling,spicy,snack}', meal_moments = '{snack,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chicken Roll';
+update public.menu_items set tags = '{veg,hot,filling,snack}', meal_moments = '{snack,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Roll';
+update public.menu_items set tags = '{veg,filling,snack}', meal_moments = '{snack,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Club Sandwich';
+update public.menu_items set tags = '{veg,hot,spicy,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Samosa';
+update public.menu_items set tags = '{veg,hot,filling,snack}', meal_moments = '{snack,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Burger';
+update public.menu_items set tags = '{non-veg,hot,heavy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chicken Burger';
+update public.menu_items set tags = '{veg,hot,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Pasta';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Triple Rice';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Triple Noodle';
+update public.menu_items set tags = '{veg,hot,light,quick}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Idli Sambhar';
+update public.menu_items set tags = '{veg,hot,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Vada Sambhar';
+update public.menu_items set tags = '{veg,hot,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Medu Vada';
+update public.menu_items set tags = '{veg,hot,light}', meal_moments = '{breakfast,snack,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Sada Dosa';
+update public.menu_items set tags = '{veg,hot,spicy,filling}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Masala Dosa';
+update public.menu_items set tags = '{veg,hot,spicy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Pav Bhaji';
+update public.menu_items set tags = '{veg,cold,light,snack}', meal_moments = '{snack,lunch}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Dahiwada';
+update public.menu_items set tags = '{veg,hot,spicy,quick,snack}', meal_moments = '{breakfast,snack}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Potato Wada';
+update public.menu_items set tags = '{veg,hot,filling}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Uttapam';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Paneer Parata';
+update public.menu_items set tags = '{veg,hot,filling,meal}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Aloo Parata';
+update public.menu_items set tags = '{veg,hot,filling,meal}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Gobi Parata';
+update public.menu_items set tags = '{veg,hot,filling,meal}', meal_moments = '{breakfast,lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Pyaz Parata';
+update public.menu_items set tags = '{veg,hot,sweet,snack}', meal_moments = '{snack,dinner,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Gajar ka Halwa';
+update public.menu_items set tags = '{veg,cold,sweet,drink}', meal_moments = '{snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Cold Coffee';
+update public.menu_items set tags = '{veg,hot,drink,quick}', meal_moments = '{breakfast,snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Tea';
+update public.menu_items set tags = '{veg,hot,drink,quick}', meal_moments = '{breakfast,snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Sp. Tea';
+update public.menu_items set tags = '{veg,hot,drink,quick}', meal_moments = '{breakfast,snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Coffee';
+update public.menu_items set tags = '{veg,hot,light,drink}', meal_moments = '{breakfast,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Milk';
+update public.menu_items set tags = '{veg,hot,drink,quick}', meal_moments = '{breakfast,snack,late}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Cutting Tea (Special)';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Daily Lunch Thali';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Sunday Special Thali';
+update public.menu_items set tags = '{veg,hot,spicy,meal}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Masala Bhindi';
+update public.menu_items set tags = '{veg,hot,heavy,filling,meal,spicy}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Veg Biryani';
+update public.menu_items set tags = '{non-veg,heavy,filling,meal,spicy}', meal_moments = '{lunch,dinner}'
+  where canteen_id = (select id from public.canteens where slug = 'oac') and name = 'Chicken Biryani';
