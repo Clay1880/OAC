@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { homeFor } from "@/lib/auth/redirects";
 import type { UserRole } from "@/lib/auth/types";
+import { supabaseEnv } from "@/lib/supabase/env";
 
 /** Reachable without signing in. Everything else needs a session. */
 const SIGNED_OUT_PATHS = ["/login", "/verify", "/staff-login", "/demo-login"];
@@ -11,20 +12,17 @@ const isArea = (path: string, area: string) => path === area || path.startsWith(
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-        },
+  const { url, anonKey } = supabaseEnv();
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
-  );
+  });
 
   /** A redirect that keeps any session cookies the client just refreshed. */
   const redirectTo = (target: string) => {
