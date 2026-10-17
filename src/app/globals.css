@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+/*
+ * OAC design foundation
+ * Identity: a canteen order chit. Warm paper, near-black ink, one chili-red accent.
+ * Every colour pair below was checked for >= 4.5:1 (text) / >= 3:1 (UI edges).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --paper: #f5efe3;
+  --surface: #fbf8f1;
+  --sunken: #ebe3d3;
+  --line: #d8ccb6; /* decorative hairlines only */
+  --line-strong: #8c7f6e; /* input / control edges: 3.4:1 on paper */
+
+  /* Ink */
+  --ink: #1a1511; /* 15.8:1 on paper */
+  --ink-soft: #4a4037; /* 8.8:1 */
+  --ink-faint: #6b5f54; /* 5.4:1, the lowest-contrast text allowed */
+
+  /* The one accent */
+  --chili: #c4261d; /* 5.0:1 on paper, 5.5:1 for on-chili text */
+  --chili-deep: #9e1b14;
+  --chili-soft: #f9dad3;
+  --on-chili: #fff8ee;
+
+  /* Order status: soft background, readable ink, saturated dot */
+  --status-placed-bg: #f6e3b0;
+  --status-placed-ink: #5c3f00;
+  --status-placed-dot: #9c6900;
+  --status-accepted-bg: #d9e2f5;
+  --status-accepted-ink: #1c3a73;
+  --status-accepted-dot: #2f5bb7;
+  --status-ready-bg: #d3ebcb;
+  --status-ready-ink: #1b4d1a;
+  --status-ready-dot: #2e8b2b;
+  --status-collected-bg: #e5dfd3;
+  --status-collected-ink: #3f372e;
+  --status-collected-dot: #7a6f62;
+  --status-no-show-bg: #ebd3e3;
+  --status-no-show-ink: #6b1f57;
+  --status-no-show-dot: #a23a87;
+  --status-cancelled-bg: #efe9dd;
+  --status-cancelled-ink: #5e554b;
+  --status-cancelled-dot: #8c7f6e;
+}
+
+@theme inline {
+  /* Replace Tailwind's stock palette, radii and shadows so nothing default leaks in. */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-chili: var(--chili);
+  --color-chili-deep: var(--chili-deep);
+  --color-chili-soft: var(--chili-soft);
+  --color-on-chili: var(--on-chili);
+
+  --color-status-placed: var(--status-placed-bg);
+  --color-status-placed-ink: var(--status-placed-ink);
+  --color-status-placed-dot: var(--status-placed-dot);
+  --color-status-accepted: var(--status-accepted-bg);
+  --color-status-accepted-ink: var(--status-accepted-ink);
+  --color-status-accepted-dot: var(--status-accepted-dot);
+  --color-status-ready: var(--status-ready-bg);
+  --color-status-ready-ink: var(--status-ready-ink);
+  --color-status-ready-dot: var(--status-ready-dot);
+  --color-status-collected: var(--status-collected-bg);
+  --color-status-collected-ink: var(--status-collected-ink);
+  --color-status-collected-dot: var(--status-collected-dot);
+  --color-status-no-show: var(--status-no-show-bg);
+  --color-status-no-show-ink: var(--status-no-show-ink);
+  --color-status-no-show-dot: var(--status-no-show-dot);
+  --color-status-cancelled: var(--status-cancelled-bg);
+  --color-status-cancelled-ink: var(--status-cancelled-ink);
+  --color-status-cancelled-dot: var(--status-cancelled-dot);
+
+  /* Type: next/font injects the --font-* variables on <html>. */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "Cascadia Mono", monospace;
+
+  /* Shape: small chips, softer cards, generous sheets. */
+  --radius-chip: 0.5rem;
+  --radius-card: 1rem;
+  --radius-sheet: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Depth: flat paper with a hard "pressed" edge instead of blurry drop shadows. */
+  --shadow-press: 0 2px 0 0 var(--chili-deep);
+  --shadow-edge: 0 1px 0 0 var(--line);
+  --shadow-lift: 0 10px 30px -12px rgb(26 21 17 / 0.35);
+
+  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-toast-in: toast-in 240ms var(--ease-snap);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--paper);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--paper);
+    /* Faint paper grain so the page is not a flat fill. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .06 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 60;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  /* One focus ring everywhere: ink ring offset from the control, visible on paper, chili and ink. */
+  :focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--chili);
+    color: var(--on-chili);
+  }
+
+  dialog {
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* Prices and counts line up in columns; order codes use the mono face. */
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .order-code {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Staff screens: wrap in data-surface="staff" for larger type and darker secondary text. */
+  [data-surface="staff"] {
+    font-size: 1.0625rem;
+    --ink-faint: #54493f; /* 7:1 on paper, for glare-prone counter use */
+  }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--sunken);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(251 248 241 / 0.7), transparent);
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Bottom sheet built on <dialog>: native focus trap, Esc, and inert background. */
+  dialog.sheet {
+    position: fixed;
+    inset: auto 0 0 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 32rem;
+    max-height: min(88dvh, 44rem);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    background: var(--surface);
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+  }
+  dialog.sheet[open] {
+    display: flex;
+    flex-direction: column;
+    animation: sheet-in 280ms var(--ease-snap);
+  }
+  dialog.sheet::backdrop {
+    background: rgb(26 21 17 / 0.55);
+    animation: fade-in 200ms ease-out;
+  }
+  body:has(dialog.sheet[open]) {
+    overflow: hidden;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(2.5rem);
+    opacity: 0;
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(0.75rem) scale(0.98);
+    opacity: 0;
+  }
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Motion is restrained; for people who ask for none, it is none. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton::after {
+    display: none;
+  }
+}
