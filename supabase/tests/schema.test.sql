@@ -6,7 +6,7 @@ select plan(67);
 -- ---------------------------------------------------------------------------
 -- Fixtures (inserted as the superuser, so RLS and grants do not apply)
 -- ---------------------------------------------------------------------------
--- The domain comes from app_settings (seeded locally as college.edu); never hard-coded here.
+-- The domain comes from app_settings (seeded locally as aitpune.edu.in); never hard-coded here.
 create temp table t_domain on commit drop as
   select college_email_domain as d from public.app_settings;
 grant select on t_domain to authenticated;

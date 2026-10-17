@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
+import { isDemoLoginEnabled } from "@/lib/config";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Sign in" };
@@ -16,6 +17,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <Link href="/staff-login" className="font-semibold text-ink underline underline-offset-4">
             Sign in here
           </Link>
+          {isDemoLoginEnabled() && (
+            <>
+              {" "}
+              · Demo?{" "}
+              <Link href="/demo-login" className="font-semibold text-ink underline underline-offset-4">
+                Use the demo account
+              </Link>
+            </>
+          )}
         </>
       }
     >

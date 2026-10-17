@@ -25,3 +25,10 @@ export function requireCollegeEmailDomain(): string {
   }
   return COLLEGE_EMAIL_DOMAIN;
 }
+
+/**
+ * Presentation fallback: a fixed demo student can sign in with an ID and password when the OTP
+ * email is not available. Server only (not NEXT_PUBLIC_), and off unless DEMO_LOGIN=true, so a
+ * production deployment never exposes it.
+ */
+export const isDemoLoginEnabled = () => process.env.DEMO_LOGIN === "true";

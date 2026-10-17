@@ -1,5 +1,6 @@
 "use server";
 
+import { isDemoLoginEnabled } from "@/lib/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,24 @@ export async function staffLogin(loginId: string, password: string): Promise<Sta
   if (!profile.is_active) {
     await supabase.auth.signOut();
     return { ok: false, error: "INACTIVE" };
+  }
+  return { ok: true };
+}
+
+/** Demo-student sign-in for presentations. Refuses outright unless DEMO_LOGIN=true, and only ever signs in students. */
+export async function demoLogin(loginId: string, password: string): Promise<StaffLoginResult> {
+  if (!isDemoLoginEnabled()) return { ok: false, error: "INVALID" };
+  const id = loginId.trim().toLowerCase();
+  if (!LOGIN_ID_PATTERN.test(id) || password === "") return { ok: false, error: "INVALID" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email: `${id}@${STAFF_EMAIL_DOMAIN}`, password });
+  if (error || !data.user) return { ok: false, error: "INVALID" };
+
+  const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", data.user.id).maybeSingle();
+  if (!profile || profile.role !== "student" || !profile.is_active) {
+    await supabase.auth.signOut();
+    return { ok: false, error: "INVALID" };
   }
   return { ok: true };
 }

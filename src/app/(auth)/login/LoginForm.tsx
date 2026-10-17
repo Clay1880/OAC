@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { requireCollegeEmailDomain } from "@/lib/config";
+import { COLLEGE_EMAIL_DOMAIN, requireCollegeEmailDomain } from "@/lib/config";
 import { isCollegeEmail } from "@/lib/auth/validate";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -58,7 +58,7 @@ export function LoginForm() {
         inputMode="email"
         autoComplete="email"
         autoCapitalize="none"
-        placeholder="you@college.edu"
+        placeholder={`you@${COLLEGE_EMAIL_DOMAIN ?? "college.edu"}`}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         error={error}

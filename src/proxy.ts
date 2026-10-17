@@ -4,7 +4,7 @@ import { homeFor } from "@/lib/auth/redirects";
 import type { UserRole } from "@/lib/auth/types";
 
 /** Reachable without signing in. Everything else needs a session. */
-const SIGNED_OUT_PATHS = ["/login", "/verify", "/staff-login"];
+const SIGNED_OUT_PATHS = ["/login", "/verify", "/staff-login", "/demo-login"];
 
 const isArea = (path: string, area: string) => path === area || path.startsWith(`${area}/`);
 
