@@ -4,9 +4,16 @@
 -- Production sets its real domain directly in app_settings; nothing here applies there.
 update public.app_settings set college_email_domain = 'aitpune.edu.in';
 
--- The real canteen menu (62 items). Prices are in paise. Items priced "MRP" on the menu card
--- are not here: add them from the admin console once their price is known.
-insert into public.menu_items (name, price_paise, category, sort) values
+-- The same domain picks the college for new sign-ups (0008 backfills college ait-pune).
+insert into public.college_domains (domain, college_id)
+select 'aitpune.edu.in', id from public.colleges where slug = 'ait-pune'
+on conflict do nothing;
+
+-- The real menu of the Open Area Canteen (62 items). Prices are in paise. Items priced "MRP"
+-- on the menu card are not here: add them from the admin console once their price is known.
+insert into public.menu_items (canteen_id, name, price_paise, category, sort)
+select (select id from public.canteens where slug = 'oac'), m.name, m.price_paise, m.category, m.sort
+from (values
   ('Aloo chat', 3500, 'Chat', 10),
   ('Fruit chat', 3000, 'Chat', 20),
   ('Fruit Basket', 5000, 'Chat', 30),
@@ -68,6 +75,7 @@ insert into public.menu_items (name, price_paise, category, sort) values
   ('Sunday Special Thali', 7000, 'Le Menu De Chef', 590),
   ('Masala Bhindi', 5000, 'Le Menu De Chef', 600),
   ('Veg Biryani', 7000, 'Biryani', 610),
-  ('Chicken Biryani', 8000, 'Biryani', 620);
+  ('Chicken Biryani', 8000, 'Biryani', 620)
+) as m (name, price_paise, category, sort);
 
 -- No sample slots: `npx tsx scripts/seed-demo.ts` (or the admin console) opens pickup times.
