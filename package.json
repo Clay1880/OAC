@@ -14,6 +14,7 @@
     "demo:reset": "supabase db reset && tsx scripts/seed-demo.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "@supabase/ssr": "^0.12.7",
     "next": "16.4.2",
     "react": "19.3.0",
